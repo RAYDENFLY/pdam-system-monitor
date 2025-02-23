@@ -17,6 +17,9 @@ Route::get('/', function () {
 
 Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showRegisterForm'])->name('admin.register');
+    Route::get('/admin/edit-user/{id}', [AdminController::class, 'editUser'])->name('admin.editUser');
+    Route::post('/admin/update-user/{id}', [AdminController::class, 'updateUser'])->name('admin.updateUser');
+    Route::delete('/admin/delete-user/{id}', [AdminController::class, 'deleteUser'])->name('admin.deleteUser');
     Route::post('/admin/register', [AdminController::class, 'storeUser'])->name('admin.storeUser');
 });
 
@@ -25,9 +28,8 @@ Route::post('/logout', function () {
     return redirect('/login')->with('success', 'Berhasil logout.');
 })->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -50,6 +52,9 @@ Route::middleware(['auth', RoleMiddleware::class . ':kasir'])->group(function ()
     Route::get('/daftar-invoice', [InvoiceController::class, 'list'])->name('invoice.list');
     Route::get('/list-invoice', [InvoiceController::class, 'list'])->name('invoice.list');
     Route::get('/buat-invoice', [InvoiceController::class, 'create'])->name('invoice.create');
+    Route::post('/invoice/{id}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoice.markPaid');
+    Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
+    Route::post('/invoice/{id}/mark-unpaid', [InvoiceController::class, 'markUnpaid'])->middleware('admin')->name('invoice.markUnpaid');
     Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
     // Rute untuk export CSV
     Route::get('laporan/exportCSV', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
@@ -72,9 +77,6 @@ Route::middleware(['auth', RoleMiddleware::class . ':admin,kasir,teknisi'])->gro
 // ✅ Invoice Routes
 Route::get('/invoice/{nomor_pelanggan}', [InvoiceController::class, 'show'])->name('invoice.show');
 Route::get('/cetak-invoice/{nomor_pelanggan}', [InvoiceController::class, 'show'])->name('invoice.show');
-Route::post('/invoice/{id}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoice.markPaid');
-Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
-Route::post('/invoice/{id}/mark-unpaid', [InvoiceController::class, 'markUnpaid'])->middleware('admin')->name('invoice.markUnpaid');
 
 // ✅ KWH Routes
 Route::get('/kwh/create', [KwhController::class, 'create'])->name('kwh.create');
@@ -83,6 +85,7 @@ Route::post('/kwh/store', [KwhController::class, 'store'])->name('kwh.store');
 // ✅ Konfigurasi (khusus admin)
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/konfigurasi', [KonfigurasiController::class, 'index'])->name('konfigurasi.index');
+    Route::post('/contact/update', [ContactController::class, 'update'])->name('contact.update');
     Route::post('/konfigurasi/update', [KonfigurasiController::class, 'update'])->name('konfigurasi.update');
 });
 

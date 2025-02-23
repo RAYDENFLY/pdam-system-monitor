@@ -32,12 +32,18 @@ class InvoiceController extends Controller
         // Hitung total
         $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
         $total_tagihan = $total_pemakaian * $tarif_per_kwh;
-        $total_denda = Pembayaran::hitungDenda($nomor_pelanggan);
-
         
-        
-        // Hitung total pembayaran
+        // Pastikan denda selalu positif
+        $total_denda = abs(Pembayaran::hitungDenda($nomor_pelanggan));
+    
+        // Pastikan total pembayaran dihitung dengan penambahan
         $totalPembayaran = $total_tagihan + $total_denda;
+    
+        // Debug untuk melihat nilai-nilai
+        \Log::info("Debug Nilai di show():");
+        \Log::info("Total Tagihan: " . $total_tagihan);
+        \Log::info("Total Denda: " . $total_denda);
+        \Log::info("Total Pembayaran: " . $totalPembayaran);
     
         return view('invoice.show', compact(
             'pelanggan',
@@ -48,6 +54,7 @@ class InvoiceController extends Controller
             'totalPembayaran'
         ));
     }
+
     public function generateAll()
     {
         $konfigurasi = Konfigurasi::first();
@@ -64,7 +71,9 @@ class InvoiceController extends Controller
                 ->latest()
                 ->first();
 
-            $sudahTerbayar = $pembayaranTerakhir && $pembayaranTerakhir->jumlah_dibayar >= ($total_tagihan + $total_denda);
+            // Perbaikan pengecekan sudah terbayar
+            $total_yang_harus_dibayar = $total_tagihan + $total_denda;
+            $sudahTerbayar = $pembayaranTerakhir && $pembayaranTerakhir->jumlah_dibayar >= $total_yang_harus_dibayar;
 
             if (!$sudahTerbayar) {
                 $invoices[] = [
@@ -72,6 +81,7 @@ class InvoiceController extends Controller
                     'total_pemakaian' => $total_pemakaian,
                     'total_tagihan' => $total_tagihan,
                     'total_denda' => $total_denda,
+                    'total_pembayaran' => $total_yang_harus_dibayar,
                     'pembayaran' => $pembayaranTerakhir
                 ];
             }
@@ -84,7 +94,7 @@ class InvoiceController extends Controller
     {
         $pembayaran = Pembayaran::findOrFail($id);
         
-        // Update jumlah dibayar (lunas)
+        // Update jumlah dibayar (lunas) dengan total yang benar
         $totalPembayaran = $pembayaran->total_tagihan + $pembayaran->denda;
         $pembayaran->jumlah_dibayar = $totalPembayaran;
         $pembayaran->tanggal_pembayaran = now();
@@ -97,8 +107,6 @@ class InvoiceController extends Controller
     
         return redirect()->back()->with('success', 'Invoice berhasil ditandai sebagai lunas.');
     }
-
- 
 
     public function markUnpaid($id)
     {
@@ -127,7 +135,11 @@ class InvoiceController extends Controller
 
         $pelanggans = $query->get()->map(function ($pelanggan) {
             $pembayaranTerakhir = $pelanggan->pembayarans->first();
-            $pelanggan->status_pembayaran = ($pembayaranTerakhir && $pembayaranTerakhir->jumlah_dibayar >= $pembayaranTerakhir->total_tagihan)
+            // Perbaikan logika pengecekan lunas
+            $total_yang_harus_dibayar = $pembayaranTerakhir ? 
+                ($pembayaranTerakhir->total_tagihan + $pembayaranTerakhir->denda) : 0;
+            
+            $pelanggan->status_pembayaran = ($pembayaranTerakhir && $pembayaranTerakhir->jumlah_dibayar >= $total_yang_harus_dibayar)
                 ? 'lunas'
                 : 'belum lunas';
 
@@ -143,47 +155,63 @@ class InvoiceController extends Controller
         return view('invoice.create', compact('pelanggans'));
     }
 
-  public function store(Request $request)
+    public function store(Request $request)
     {
+        // Find the Pelanggan based on nomor_pelanggan
         $pelanggan = Pelanggan::where('nomor_pelanggan', $request->nomor_pelanggan)->firstOrFail();
-
-        // Ambil denda yang benar dari fungsi yang sudah diperbaiki
-        $total_denda = Pembayaran::hitungDenda($request->nomor_pelanggan);
-
-        // Simpan invoice baru dengan denda yang benar
+    
+        // Pastikan denda tidak negatif
+        $total_denda = max(0, Pembayaran::hitungDenda($request->nomor_pelanggan)); 
+    
+        // Hitung total pembayaran
+        $total_pembayaran = $request->total_tagihan + $total_denda;
+    
+        // Debugging log
+        \Log::info("===== DEBUG INVOICE CREATE =====");
+        \Log::info("Nomor Pelanggan: " . $request->nomor_pelanggan);
+        \Log::info("Total Tagihan: " . $request->total_tagihan);
+        \Log::info("Total Denda: " . $total_denda);
+        \Log::info("Total Pembayaran: " . $total_pembayaran);
+    
+        // Store the new invoice
         Pembayaran::create([
             'nomor_pelanggan' => $request->nomor_pelanggan,
             'total_pemakaian' => $request->total_pemakaian,
             'total_tagihan' => $request->total_tagihan,
-            'jumlah_dibayar' => 0,
-            'tanggal_pembayaran' => now(),
-            'denda' => $total_denda,
+            'jumlah_dibayar' => 0,  // Set to 0 since it hasn't been paid yet
+            'tanggal_pembayaran' => null, // Set null because it's unpaid
+            'denda' => $total_denda, // Simpan nilai denda yang sudah dikoreksi
         ]);
-
+    
         return redirect()->route('invoice.list')->with('success', 'Invoice berhasil dibuat.');
     }
-
+    
+    
     public function list(Request $request)
     {
         $search = $request->input('search');
         $query = Pembayaran::with('pelanggan');
-
+    
         if ($search) {
             $query->whereHas('pelanggan', function ($q) use ($search) {
                 $q->where('nomor_pelanggan', 'like', "%$search%")
                     ->orWhere('nama', 'like', "%$search%");
             });
         }
-
-        $invoices = $query->get();
+    
+        $invoices = $query->get()->map(function ($invoice) {
+            // Ensure denda is non-negative
+            $invoice->denda = max(0, $invoice->denda); // Use max to prevent negative values
+    
+            return $invoice;
+        });
+    
         return view('invoice.list', compact('invoices'));
     }
-
+    
     public function getDenda($nomor_pelanggan)
     {
         $total_denda = Pembayaran::hitungDenda($nomor_pelanggan);
         return response()->json(['denda' => $total_denda]);
     }
 }
-
-

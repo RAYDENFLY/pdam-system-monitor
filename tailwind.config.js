@@ -17,5 +17,16 @@ export default {
         },
     },
 
-    plugins: [forms],
+    plugins: [
+        function ({ addComponents }) {
+          addComponents({
+            '@media print': {
+              '@page': {
+                size: '9.5in 11in', // Ukuran kertas PRS
+                margin: '0.5in',    // Tambahkan margin biar rapi
+              },
+            },
+          });
+        },
+      ],
 };

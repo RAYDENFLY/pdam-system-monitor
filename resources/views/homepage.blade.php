@@ -7,7 +7,7 @@
     <header class="sticky top-0 z-50 bg-white shadow-md">
         <div class="flex justify-between items-center py-4 px-8 bg-gradient-to-r from-green-600 to-blue-700 text-white">
             <!-- Logo -->
-            <img alt="Listrik Pasar Cipanas logo" class="h-12" src="https://storage.googleapis.com/a1aa/image/WXYgjGg90ZKKyo5DFbFcTSufDygjHN9dZGxkHCGyVL8.jpg"/>
+            <img alt="Listrik Pasar Cipanas logo" class="h-12" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRikenMtJmVcTQ89zGHcZ6KLH90xKhLxknNHg&s"/>
             
             <!-- Navbar Links -->
             <nav class="hidden md:flex space-x-12 text-lg font-medium">
@@ -61,9 +61,10 @@
         <div class="mt-10 flex justify-center">
             <form onsubmit="return redirectToInvoice()" class="flex gap-6 bg-white p-6 rounded-lg shadow-lg w-full sm:w-2/3 md:w-1/2 lg:w-1/3">
                 <input id="nomor_pelanggan" class="p-4 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nomor Pelanggan" type="text" required/>
-                <button type="submit" class="bg-blue-600 text-white py-4 px-6 rounded-md font-semibold shadow-md hover:bg-blue-700 transition duration-300">
-                    <i class="fas fa-search mr-3"></i> Cek Tagihan
-                </button>
+                 <button type="submit" class="bg-blue-600 text-white py-4 px-6 rounded-md font-semibold shadow-md hover:bg-blue-700 transition duration-300 whitespace-nowrap">
+                <i class="fas fa-search mr-3"></i> Cek Tagihan
+            </button>
+
             </form>
         </div>
     </section>

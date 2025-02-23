@@ -115,7 +115,8 @@ function hitungTagihan() {
         fetch(`/get-denda/${nomorPelanggan}`)
             .then(response => response.json())
             .then(data => {
-                let denda = data.denda || 0;
+                // Ensure denda is always positive using Math.abs()
+                let denda = Math.abs(data.denda || 0);
                 document.getElementById('denda').value = denda;
                 document.getElementById('denda_display').textContent = formatRupiah(denda);
 
