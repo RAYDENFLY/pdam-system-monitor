@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Models\Konfigurasi;
 use App\Models\Pelanggan;
 use App\Models\Pembayaran;
 use Illuminate\Http\Request;
@@ -26,11 +26,19 @@ class PembayaranController extends Controller
         $tanggal_pembayaran = now(); 
     
         // Hitung total pemakaian dan tagihan
-        $total_pemakaian = $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu;
-        $total_tagihan = $total_pemakaian * 1500; // Tarif per KWH
+        $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
+
+        // Pastikan tarif_per_kwh adalah array, jika null, gunakan default array kosong
+        $tarif_per_kwh = is_array($konfigurasi->tarif_per_kwh) ? $konfigurasi->tarif_per_kwh : [];
+        
+        $tarif_kwh_pelanggan = $tarif_per_kwh[$pelanggan->kategori_tarif] ?? 1500;
+        $total_tagihan = $total_pemakaian * $tarif_kwh_pelanggan;
+        
     
         // Cek apakah pembayaran dilakukan setelah tanggal 20
-        $denda = $tanggal_pembayaran->day > 20 ? 5000 : 0; 
+        $konfigurasi = Konfigurasi::first();
+        $denda = ($tanggal_pembayaran->day > 20) ? ($konfigurasi->denda_bulanan ?? 5000) : 0;        
+
     
         // Simpan data pembayaran dengan denda otomatis
         Pembayaran::create([

@@ -9,18 +9,21 @@ use App\Http\Controllers\LaporanKeuanganController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\AdminController;
-
-
+use App\Http\Controllers\KonfigurasiController;
 
 Route::get('/', function () {
     return view('homepage');
+});
+
+Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function () {
+    Route::get('/admin/register', [AdminController::class, 'showRegisterForm'])->name('admin.register');
+    Route::post('/admin/register', [AdminController::class, 'storeUser'])->name('admin.storeUser');
 });
 
 Route::post('/logout', function () {
     Auth::logout();
     return redirect('/login')->with('success', 'Berhasil logout.');
 })->name('logout');
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -30,66 +33,59 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin/register', [AdminController::class, 'showRegisterForm'])->name('admin.register');
-    Route::post('/admin/register', [AdminController::class, 'storeUser'])->name('admin.storeUser');
-
-    Route::get('/admin/edit/{id}', [AdminController::class, 'editUser'])->name('admin.editUser');
-    Route::post('/admin/update/{id}', [AdminController::class, 'updateUser'])->name('admin.updateUser');
-    Route::delete('/admin/delete/{id}', [AdminController::class, 'deleteUser'])->name('admin.deleteUser');
-});
-
+// ✅ Admin bisa akses semua halaman
 Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index']);
     Route::resource('/pelanggan', PelangganController::class)->parameters([
-        'pelanggan' => 'nomor_pelanggan' // ✅ Pakai nomor pelanggan sebagai parameter
+        'pelanggan' => 'nomor_pelanggan'
     ]);
     Route::get('/pelanggan/{nomor_pelanggan}/invoice', [PelangganController::class, 'invoice'])->name('pelanggan.invoice');
 });
 
 Route::middleware(['auth', RoleMiddleware::class . ':kasir'])->group(function () {
-    Route::get('/kasir', [KasirController::class, 'index']);
-    Route::post('/transaksi', [TransaksiController::class, 'store']);
+    Route::get('/laporan', [LaporanKeuanganController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan/{nomor_pelanggan}', [LaporanKeuanganController::class, 'show'])->name('laporan.show');
+    Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
+    Route::post('/buat-invoice', [InvoiceController::class, 'store'])->name('invoice.store');
+    Route::get('/daftar-invoice', [InvoiceController::class, 'list'])->name('invoice.list');
+    Route::get('/list-invoice', [InvoiceController::class, 'list'])->name('invoice.list');
+    Route::get('/buat-invoice', [InvoiceController::class, 'create'])->name('invoice.create');
+    Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
+    // Rute untuk export CSV
+    Route::get('laporan/exportCSV', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
+    Route::get('/laporan/{nomor_pelanggan}/export-csv', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
 });
 
-Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
-Route::post('/pembayaran/{nomor_pelanggan}', [PembayaranController::class, 'store'])->name('pembayaran.store');
-Route::get('/pembayaran/{nomor_pelanggan}', [PembayaranController::class, 'show'])->name('pembayaran.history');
+// ✅ Pembayaran bisa diakses oleh semua pengguna yang login
+Route::middleware('auth')->group(function () {
+    Route::post('/pembayaran/{nomor_pelanggan}', [PembayaranController::class, 'store'])->name('pembayaran.store');
+    Route::get('/pembayaran/{nomor_pelanggan}', [PembayaranController::class, 'show'])->name('pembayaran.history');
+});
 
-Route::get('/laporan', [LaporanKeuanganController::class, 'index'])->name('laporan.index');
-Route::get('/history', [PelangganController::class, 'history'])->name('pelanggan.history');
+// ✅ Admin, Kasir, dan Teknisi bisa akses halaman pelanggan
+Route::middleware(['auth', RoleMiddleware::class . ':admin,kasir,teknisi'])->group(function () {
+    Route::get('/user/pelanggan', [PelangganController::class, 'index'])->name('user.pelanggan');
+    Route::get('/pelanggan/create', [PelangganController::class, 'create'])->name('pelanggan.create');
+    Route::post('/pelanggan/store', [PelangganController::class, 'store'])->name('pelanggan.store');
+});
 
-
-// Menampilkan daftar invoice
-Route::get('/daftar-invoice', [InvoiceController::class, 'list'])->name('invoice.list');
-
-// Proses tandai lunas berdasarkan nomor pelanggan
+// ✅ Invoice Routes
 Route::get('/invoice/{nomor_pelanggan}', [InvoiceController::class, 'show'])->name('invoice.show');
-
-// Menampilkan daftar invoice
-Route::get('/list-invoice', [InvoiceController::class, 'list'])->name('invoice.list');
-
-// Menampilkan invoice pelanggan tertentu
 Route::get('/cetak-invoice/{nomor_pelanggan}', [InvoiceController::class, 'show'])->name('invoice.show');
-
-// Menampilkan form buat invoice
-Route::get('/buat-invoice', [InvoiceController::class, 'create'])->name('invoice.create');
-
-// Menyimpan invoice baru
-Route::post('/buat-invoice', [InvoiceController::class, 'store'])->name('invoice.store');
-
-// Memperbarui status invoice (lunas/belum lunas)
-Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
-// Menandai invoice sebagai lunas
 Route::post('/invoice/{id}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoice.markPaid');
+Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
+Route::post('/invoice/{id}/mark-unpaid', [InvoiceController::class, 'markUnpaid'])->middleware('admin')->name('invoice.markUnpaid');
 
-// Menandai invoice sebagai belum lunas (khusus admin)
-Route::post('/invoice/{id}/mark-unpaid', [InvoiceController::class, 'markUnpaid'])
-    ->middleware('admin') // ✅ Pastikan ini ada
-    ->name('invoice.markUnpaid');
+// ✅ KWH Routes
+Route::get('/kwh/create', [KwhController::class, 'create'])->name('kwh.create');
+Route::post('/kwh/store', [KwhController::class, 'store'])->name('kwh.store');
 
-Route::get('/pelanggan/{nomor_pelanggan}/history', [PelangganController::class, 'history'])->name('pelanggan.history');
+// ✅ Konfigurasi (khusus admin)
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/konfigurasi', [KonfigurasiController::class, 'index'])->name('konfigurasi.index');
+    Route::post('/konfigurasi/update', [KonfigurasiController::class, 'update'])->name('konfigurasi.update');
+});
 
-    
+Route::get('/get-denda/{nomor_pelanggan}', [InvoiceController::class, 'getDenda']);
+
 require __DIR__.'/auth.php';

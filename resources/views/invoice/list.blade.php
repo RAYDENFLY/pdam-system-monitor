@@ -41,38 +41,38 @@
                 <td>Rp {{ number_format($invoice->total_tagihan, 0, ',', '.') }}</td>
                 <td>Rp {{ number_format($invoice->jumlah_dibayar, 0, ',', '.') }}</td>
                 <td>
-                    @if ($invoice->jumlah_dibayar >= $invoice->total_tagihan)
+                    @if ($invoice->isLunas())
                         <span class="badge bg-success">Lunas</span>
                     @else
                         <span class="badge bg-danger">Belum Lunas</span>
                     @endif
                 </td>
+
                 <td>
                     <a href="{{ route('invoice.show', $invoice->pelanggan->nomor_pelanggan) }}" class="btn btn-primary btn-sm">
                         Cetak Invoice
                     </a>
 
-                    <!-- Jika belum lunas, tampilkan tombol Tandai Lunas -->
-                    @if ($invoice->jumlah_dibayar < $invoice->total_tagihan)
-                        <form method="POST" action="{{ route('invoice.markPaid', $invoice->id) }}" style="display:inline;">
-                            @csrf
-                            @method('POST')
-                            <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Tandai invoice ini sebagai lunas?')">
-                                Tandai Lunas
-                            </button>
-                        </form>
-                    @endif
+                                    <!-- Jika belum lunas, tampilkan tombol Tandai Lunas -->
+                @if (!$invoice->isLunas())
+                    <form method="POST" action="{{ route('invoice.updateStatus', $invoice->id) }}" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Tandai invoice ini sebagai lunas?')">
+                            Tandai Lunas
+                        </button>
+                    </form>
+                @endif
 
-                    <!-- Jika sudah lunas dan user adalah admin, tampilkan tombol Tandai Tidak Lunas -->
-                    @if ($invoice->jumlah_dibayar >= $invoice->total_tagihan && auth()->user()->role == 'admin')
-                        <form method="POST" action="{{ route('invoice.markUnpaid', $invoice->id) }}" style="display:inline;">
-                            @csrf
-                            @method('POST')
-                            <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Tandai invoice ini sebagai belum lunas?')">
-                                Tandai Tidak Lunas
-                            </button>
-                        </form>
-                    @endif
+                <!-- Jika sudah lunas dan user adalah admin, tampilkan tombol Tandai Tidak Lunas -->
+                @if ($invoice->isLunas() && auth()->user()->role == 'admin')
+                    <form method="POST" action="{{ route('invoice.markUnpaid', $invoice->id) }}" style="display:inline;">
+                        @csrf
+                        @method('POST')
+                        <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Tandai invoice ini sebagai belum lunas?')">
+                            Tandai Tidak Lunas
+                        </button>
+                    </form>
+                @endif
                 </td>
             </tr>
             @endforeach

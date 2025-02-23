@@ -38,6 +38,10 @@
                 <th>Denda</th>
                 <td>Rp {{ number_format($pembayaran->denda ?? 0, 0, ',', '.') }}</td>
             </tr>
+            <tr>
+                <th>Tanggal Pembayaran Terakhir</th>
+                <td>{{ $pelanggan->tanggal_pembayaran_terakhir ? \Carbon\Carbon::parse($pelanggan->tanggal_pembayaran_terakhir)->format('d M Y') : '-' }}</td>
+            </tr>
             <tr class="table-{{ $sudahTerbayar ? 'success' : 'warning' }}">
                 <th>Total Pembayaran</th>
                 <td>

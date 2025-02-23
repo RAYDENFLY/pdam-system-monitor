@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Tagihan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -38,14 +39,18 @@ class AdminController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => $request->role,
+            ]);
 
-        return redirect()->route('admin.register')->with('success', 'User berhasil ditambahkan!');
+            return redirect()->route('admin.register')->with('success', 'User berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menambah user: ' . $e->getMessage())->withInput();
+        }
     }
 
     // Menampilkan form edit user
@@ -77,4 +82,40 @@ class AdminController extends Controller
         User::findOrFail($id)->delete();
         return redirect()->route('admin.register')->with('success', 'Karyawan berhasil dihapus.');
     }
+
+    // Update harga tarif listrik dan denda
+    public function updatePricing(Request $request)
+    {
+        try {
+            $request->validate([
+                'kategori_tarif' => 'required',
+                'harga_denda' => 'required|numeric|min:0',
+                'harga_kwh' => 'required|numeric|min:0',
+            ]);
+
+            Tagihan::updateOrCreate(
+                ['kategori_tarif' => $request->kategori_tarif],
+                ['harga_denda' => $request->harga_denda, 'harga_kwh' => $request->harga_kwh]
+            );
+
+            return redirect()->back()->with('success', 'Harga berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal update harga: ' . $e->getMessage());
+        }
+    }
+
+    public function editHarga()
+    {
+        // Ambil tagihan pertama, atau buat default jika tidak ada
+        $tagihan = Tagihan::first() ?? new Tagihan([
+            'harga_denda' => 5000, // Default harga denda
+            'harga_kwh' => 1500, // Default harga kWh
+        ]);
+    
+        return view('admin.harga', [
+            'hargaDenda' => $tagihan->harga_denda,
+            'hargaKwh' => $tagihan->harga_kwh,
+        ]);
+    }
+    
 }

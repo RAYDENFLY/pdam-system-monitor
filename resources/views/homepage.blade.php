@@ -1,77 +1,109 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto">
+<div class="max-w-screen-xl mx-auto">
 
-    <!-- Header -->
-    <header class="flex justify-between items-center py-4 px-6 bg-white shadow-md">
-        <img alt="PDAM logo" class="h-12" src="https://storage.googleapis.com/a1aa/image/WXYgjGg90ZKKyo5DFbFcTSufDygjHN9dZGxkHCGyVL8.jpg"/>
-        <nav class="flex gap-6">
-            <a class="text-gray-700 font-medium hover:text-blue-600 transition duration-300" href="{{ url('/') }}">Home</a>
-            <a class="text-gray-700 font-medium hover:text-blue-600 transition duration-300" href="#cek-tagihan">Cek Tagihan</a>
-            <a class="text-gray-700 font-medium hover:text-blue-600 transition duration-300" href="#kontak">Kontak</a>
+    <!-- Header with Sticky Navbar -->
+    <header class="sticky top-0 z-50 bg-white shadow-md">
+        <div class="flex justify-between items-center py-4 px-8 bg-gradient-to-r from-green-600 to-blue-700 text-white">
+            <!-- Logo -->
+            <img alt="Listrik Pasar Cipanas logo" class="h-12" src="https://storage.googleapis.com/a1aa/image/WXYgjGg90ZKKyo5DFbFcTSufDygjHN9dZGxkHCGyVL8.jpg"/>
+            
+            <!-- Navbar Links -->
+            <nav class="hidden md:flex space-x-12 text-lg font-medium">
+                <a href="{{ url('/') }}" class="hover:text-gray-200 transition duration-300">Home</a>
+                <a href="#cek-tagihan" class="hover:text-gray-200 transition duration-300">Cek Tagihan</a>
+                <a href="#kontak" class="hover:text-gray-200 transition duration-300">Kontak</a>
+                @auth
+                    <a href="{{ url('/dashboard') }}" class="bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg transition duration-300">Dashboard</a>
+                @else
+                    <a href="{{ route('login') }}" class="bg-blue-600 hover:bg-blue-700 py-2 px-6 rounded-lg transition duration-300">Login</a>
+                @endauth
+            </nav>
+
+            <!-- Mobile Menu Icon -->
+            <div class="md:hidden flex items-center">
+                <button id="menu-toggle" class="text-white text-3xl">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navbar (Hidden by Default) -->
+        <div id="mobile-menu" class="md:hidden bg-gradient-to-r from-green-600 to-blue-700 text-white p-6 space-y-4">
+            <a href="{{ url('/') }}" class="block hover:text-gray-200 transition duration-300">Home</a>
+            <a href="#cek-tagihan" class="block hover:text-gray-200 transition duration-300">Cek Tagihan</a>
+            <a href="#kontak" class="block hover:text-gray-200 transition duration-300">Kontak</a>
             @auth
-                <a class="bg-green-500 text-white py-2 px-5 rounded-lg shadow-md hover:bg-green-600 transition duration-300" href="{{ url('/dashboard') }}">Dashboard</a>
+                <a href="{{ url('/dashboard') }}" class="block bg-green-600 hover:bg-green-700 py-2 px-6 rounded-lg transition duration-300">Dashboard</a>
             @else
-                <a class="bg-blue-500 text-white py-2 px-5 rounded-lg shadow-md hover:bg-blue-600 transition duration-300" href="{{ route('login') }}">Login</a>
+                <a href="{{ route('login') }}" class="block bg-blue-600 hover:bg-blue-700 py-2 px-6 rounded-lg transition duration-300">Login</a>
             @endauth
-        </nav>
+        </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="relative bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-20 text-center">
-        <div class="max-w-3xl mx-auto">
-            <h1 class="text-5xl font-extrabold">SISTEM INFORMASI PEMBAYARAN TAGIHAN AIR</h1>
-            <p class="text-lg mt-4 opacity-90">Kelola dan bayar tagihan air dengan cepat, aman, dan efisien.</p>
-            <a href="#cek-tagihan" class="mt-6 inline-block bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-gray-200 transition duration-300">
+    <section class="relative bg-gradient-to-r from-blue-500 to-indigo-700 text-white py-20 text-center rounded-t-lg">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight">Sistem Pembayaran Tagihan Listrik Pasar Cipanas</h1>
+            <p class="text-lg sm:text-xl mt-4 opacity-90">Akses mudah untuk memeriksa dan membayar tagihan listrik dengan cepat, aman, dan efisien.</p>
+            <a href="#cek-tagihan" class="mt-6 inline-block bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-gray-100 transition duration-300">
                 Cek Tagihan Sekarang
             </a>
         </div>
     </section>
 
-    <!-- Cek Tagihan -->
-    <section id="cek-tagihan" class="bg-gray-50 py-16 text-center">
-        <h2 class="text-3xl font-bold text-gray-800">Cek Tagihan Anda</h2>
-        <p class="text-lg text-gray-600 mt-2">Masukkan nomor pelanggan untuk melihat tagihan Anda</p>
+    <!-- Cek Tagihan Section -->
+    <section id="cek-tagihan" class="bg-gray-50 py-20 text-center">
+        <h2 class="text-4xl font-semibold text-gray-800">Cek Tagihan Listrik Anda</h2>
+        <p class="text-lg text-gray-600 mt-4">Masukkan nomor pelanggan untuk memeriksa tagihan listrik Anda</p>
 
-        <div class="mt-6 flex justify-center">
-            <form onsubmit="return redirectToInvoice()" class="flex gap-4 bg-white p-4 rounded-lg shadow-md">
-                <input id="nomor_pelanggan" class="p-3 w-80 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Masukkan Nomor Pelanggan" type="text" required/>
-                <button type="submit" class="bg-blue-500 text-white py-3 px-6 rounded-md font-semibold shadow-md hover:bg-blue-600 transition duration-300">
-                    Cek Tagihan
+        <div class="mt-10 flex justify-center">
+            <form onsubmit="return redirectToInvoice()" class="flex gap-6 bg-white p-6 rounded-lg shadow-lg w-full sm:w-2/3 md:w-1/2 lg:w-1/3">
+                <input id="nomor_pelanggan" class="p-4 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nomor Pelanggan" type="text" required/>
+                <button type="submit" class="bg-blue-600 text-white py-4 px-6 rounded-md font-semibold shadow-md hover:bg-blue-700 transition duration-300">
+                    <i class="fas fa-search mr-3"></i> Cek Tagihan
                 </button>
             </form>
         </div>
     </section>
 
-    <!-- Kontak Kami -->
-    <section id="kontak" class="bg-white py-16 text-center">
-        <h2 class="text-3xl font-bold text-gray-800">Kontak Kami</h2>
-        <p class="text-lg text-gray-600 mt-2">Terhubung lebih dekat dengan kami</p>
+    <!-- Kontak Kami Section -->
+    <section id="kontak" class="bg-white py-20 text-center">
+        <h2 class="text-4xl font-semibold text-gray-800">Kontak Kami</h2>
+        <p class="text-lg text-gray-600 mt-4">Untuk pertanyaan lebih lanjut atau bantuan</p>
 
-        <div class="grid md:grid-cols-3 gap-8 mt-8 max-w-4xl mx-auto text-left">
-            <div class="p-6 bg-gray-100 rounded-lg shadow">
-                <h3 class="text-lg font-semibold text-gray-700">Lokasi</h3>
-                <p class="text-gray-600">Desa Kalijero, Kec. Wiro, Kab. Bogan, Prov. Jawa Utara, 58192</p>
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-12 mt-10 max-w-6xl mx-auto text-left">
+            <div class="p-8 bg-gray-100 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3"><i class="fas fa-map-marker-alt text-green-500 mr-3"></i> Lokasi</h3>
+                <p class="text-gray-600">Pasar Cipanas, Kecamatan Cipanas, Kabupaten Cianjur, Provinsi Jawa Barat, 43253</p>
             </div>
-            <div class="p-6 bg-gray-100 rounded-lg shadow">
-                <h3 class="text-lg font-semibold text-gray-700">Email</h3>
-                <p class="text-gray-600">pdam@pdam.com</p>
+            <div class="p-8 bg-gray-100 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3"><i class="fas fa-envelope text-green-500 mr-3"></i> Email</h3>
+                <p class="text-gray-600">listrikpasarcipanas@listrik.com</p>
             </div>
-            <div class="p-6 bg-gray-100 rounded-lg shadow">
-                <h3 class="text-lg font-semibold text-gray-700">No. HP</h3>
-                <p class="text-gray-600">0912-3456-7890</p>
+            <div class="p-8 bg-gray-100 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3"><i class="fas fa-phone-alt text-green-500 mr-3"></i> No. HP</h3>
+                <p class="text-gray-600">0812-3456-7890</p>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white py-6 text-center">
-        <p class="text-sm">© {{ date('Y') }} PDAM - Semua Hak Dilindungi.</p>
+    <footer class="bg-gray-900 text-white py-8 text-center">
+        <p class="text-sm">© {{ date('Y') }} Listrik Pasar Cipanas - Semua Hak Dilindungi.</p>
     </footer>
 </div>
 
 <script>
+    // Mobile Navbar Toggle
+    const menuToggle = document.getElementById('menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    menuToggle.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+
     function redirectToInvoice() {
         let nomorPelanggan = document.getElementById("nomor_pelanggan").value;
         if (nomorPelanggan.trim() === '') {
