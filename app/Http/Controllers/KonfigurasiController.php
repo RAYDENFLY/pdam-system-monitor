@@ -16,26 +16,24 @@ class KonfigurasiController extends Controller
 
     public function update(Request $request)
     {
-        // Validasi input
         $request->validate([
-            'denda_bulanan' => 'required|numeric',
-            'tarif_per_kwh.R1' => 'required|numeric',
-            'tarif_per_kwh.R2' => 'required|numeric',
-            'tarif_per_kwh.R3' => 'required|numeric',
-            'tarif_per_kwh.B1' => 'required|numeric',
+            'biaya_admin' => 'required|integer|min:0',
+            'abodemen' => 'required|integer|min:0',
+            'denda_bulanan' => 'required|integer|min:0',
+            'tarif_per_kwh' => 'required|array',
         ]);
-
-        // Ambil data konfigurasi (jika tidak ada, buat baru)
-        $konfigurasi = Konfigurasi::firstOrNew([]);
-
-        // Update data dari request
-        $konfigurasi->denda_bulanan = $request->input('denda_bulanan');
-        $konfigurasi->tarif_per_kwh = json_encode($request->input('tarif_per_kwh')); // Simpan sebagai JSON
-
-        // Simpan perubahan
+    
+        $konfigurasi = Konfigurasi::first();
+        $konfigurasi->biaya_admin = $request->biaya_admin;
+        $konfigurasi->abodemen = $request->abodemen;
+        $konfigurasi->denda_bulanan = $request->denda_bulanan;
+        $konfigurasi->tarif_per_kwh = $request->tarif_per_kwh;
         $konfigurasi->save();
-
-        // Redirect kembali dengan pesan sukses
-        return redirect()->route('konfigurasi.index')->with('success', 'Konfigurasi berhasil diperbarui!');
+    
+        return redirect()->route('konfigurasi.index')->with('success', 'Konfigurasi berhasil diperbarui.');
     }
+    
+
+    
+    
 }

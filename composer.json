@@ -8,7 +8,9 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^11.31",
-        "laravel/tinker": "^2.9"
+        "laravel/tinker": "^2.9",
+        "maatwebsite/excel": "^1.1",
+        "riskihajar/terbilang": "^2.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -68,6 +70,9 @@
             "php-http/discovery": true
         }
     },
+    "files": [
+    "app/Helpers/TerbilangHelper.php"
+],
     "minimum-stability": "stable",
     "prefer-stable": true
 }

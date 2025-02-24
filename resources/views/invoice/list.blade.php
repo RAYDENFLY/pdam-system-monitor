@@ -38,7 +38,7 @@
             <tr>
                 <td>{{ $invoice->pelanggan->nomor_pelanggan }}</td>
                 <td>{{ $invoice->pelanggan->nama }}</td>
-                <td>Rp {{ number_format($invoice->total_tagihan, 0, ',', '.') }}</td>
+                <td>Rp {{ number_format($totalPembayaran, 0, ',', '.') }}</td>
                 <td>Rp {{ number_format($invoice->jumlah_dibayar, 0, ',', '.') }}</td>
                 <td>
                     @if ($invoice->isLunas())

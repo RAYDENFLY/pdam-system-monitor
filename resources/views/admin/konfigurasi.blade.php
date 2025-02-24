@@ -21,7 +21,25 @@
         <form action="{{ route('konfigurasi.update') }}" method="POST" class="space-y-4">
             @csrf
 
-            <!-- Ubah Denda Bulanan -->
+            <!-- Biaya Admin -->
+            <div class="mb-4">
+                <label class="font-semibold flex items-center">
+                    <i class="fas fa-cash-register mr-2 text-gray-600"></i> Biaya Admin (Rp)
+                </label>
+                <input type="number" name="biaya_admin" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-300" 
+                    value="{{ $konfigurasi->biaya_admin ?? 2500 }}" required>
+            </div>
+
+            <!-- Biaya Abodemen -->
+            <div class="mb-4">
+                <label class="font-semibold flex items-center">
+                    <i class="fas fa-file-invoice mr-2 text-gray-600"></i> Biaya Abodemen (Rp)
+                </label>
+                <input type="number" name="abodemen" class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-300" 
+                    value="{{ $konfigurasi->abodemen ?? 10000 }}" required>
+            </div>
+
+            <!-- Denda Bulanan -->
             <div class="mb-4">
                 <label class="font-semibold flex items-center">
                     <i class="fas fa-money-bill-wave mr-2 text-gray-600"></i> Denda Bulanan (Rp)

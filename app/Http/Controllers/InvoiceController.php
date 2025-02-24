@@ -7,12 +7,14 @@ use App\Models\Pelanggan;
 use App\Models\Pembayaran;
 use App\Models\Konfigurasi;
 use Carbon\Carbon;
+use App\Models\Abodemen;
 
 class InvoiceController extends Controller
 {
     public function index()
     {
         $pelanggans = Pelanggan::all();
+        
         return view('invoice.index', compact('pelanggans'));
     }
 
@@ -28,6 +30,9 @@ class InvoiceController extends Controller
         // Ambil konfigurasi
         $konfigurasi = Konfigurasi::first();
         $tarif_per_kwh = $konfigurasi->tarif_per_kwh[$pelanggan->kategori_tarif] ?? 1500;
+
+        $biaya_admin = $konfigurasi->biaya_admin;
+        $abodemen = $konfigurasi->abodemen;
     
         // Hitung total
         $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
@@ -35,15 +40,24 @@ class InvoiceController extends Controller
         
         // Pastikan denda selalu positif
         $total_denda = abs(Pembayaran::hitungDenda($nomor_pelanggan));
+
+         // Pastikan biaya admin dan abodemen menggunakan nilai yang sudah tersimpan di invoice, 
+        // agar invoice lama tidak berubah ketika admin memperbarui konfigurasi
+        $biaya_admin = $pembayaranTerakhir->biaya_admin ?? $konfigurasi->biaya_admin;
+        // Ambil abodemen dari tabel abodemens, jika tidak ada pakai default
+        $biaya_langganan = Abodemen::where('nomor_pelanggan', $nomor_pelanggan)->value('abodemen');
     
         // Pastikan total pembayaran dihitung dengan penambahan
-        $totalPembayaran = $total_tagihan + $total_denda;
+        $totalPembayaran = $total_tagihan + $total_denda + $biaya_admin + $abodemen;
     
         // Debug untuk melihat nilai-nilai
         \Log::info("Debug Nilai di show():");
         \Log::info("Total Tagihan: " . $total_tagihan);
         \Log::info("Total Denda: " . $total_denda);
         \Log::info("Total Pembayaran: " . $totalPembayaran);
+
+
+        
     
         return view('invoice.show', compact(
             'pelanggan',
@@ -51,6 +65,8 @@ class InvoiceController extends Controller
             'total_pemakaian',
             'total_tagihan',
             'total_denda',
+            'biaya_admin', 
+            'biaya_langganan',
             'totalPembayaran'
         ));
     }
@@ -59,6 +75,7 @@ class InvoiceController extends Controller
     {
         $konfigurasi = Konfigurasi::first();
         $pelanggans = Pelanggan::all();
+        
         $invoices = [];
 
         foreach ($pelanggans as $pelanggan) {
@@ -66,13 +83,15 @@ class InvoiceController extends Controller
             $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
             $total_tagihan = $total_pemakaian * $tarif_per_kwh;
             $total_denda = Pembayaran::hitungDenda($pelanggan->nomor_pelanggan);
+            $biaya_admin = $konfigurasi->biaya_admin;
+            $abodemen = $konfigurasi->abodemen;
 
             $pembayaranTerakhir = Pembayaran::where('nomor_pelanggan', $pelanggan->nomor_pelanggan)
                 ->latest()
                 ->first();
 
             // Perbaikan pengecekan sudah terbayar
-            $total_yang_harus_dibayar = $total_tagihan + $total_denda;
+            $total_yang_harus_dibayar = $total_tagihan + $total_denda + $biaya_admin + $abodemen;
             $sudahTerbayar = $pembayaranTerakhir && $pembayaranTerakhir->jumlah_dibayar >= $total_yang_harus_dibayar;
 
             if (!$sudahTerbayar) {
@@ -152,35 +171,48 @@ class InvoiceController extends Controller
     public function create()
     {
         $pelanggans = Pelanggan::all();
-        return view('invoice.create', compact('pelanggans'));
+        $konfigurasi = Konfigurasi::first(); // Ambil konfigurasi dari database
+        // Default denda jika tidak ada pelanggan yang dipilih
+         $total_denda = 0; 
+        return view('invoice.create', compact('pelanggans', 'konfigurasi'));
     }
 
     public function store(Request $request)
     {
-        // Find the Pelanggan based on nomor_pelanggan
         $pelanggan = Pelanggan::where('nomor_pelanggan', $request->nomor_pelanggan)->firstOrFail();
-    
-        // Pastikan denda tidak negatif
         $total_denda = max(0, Pembayaran::hitungDenda($request->nomor_pelanggan)); 
+        $konfigurasi = Konfigurasi::first();
     
-        // Hitung total pembayaran
-        $total_pembayaran = $request->total_tagihan + $total_denda;
+        // Debug untuk melihat nilai yang diterima
+        \Log::info('Request data:', [
+            'custom_biaya_langganan' => $request->input('custom_biaya_langganan'),
+            'biaya_langganan_value' => $request->input('biaya_langganan'),
+        ]);
     
-        // Debugging log
-        \Log::info("===== DEBUG INVOICE CREATE =====");
-        \Log::info("Nomor Pelanggan: " . $request->nomor_pelanggan);
-        \Log::info("Total Tagihan: " . $request->total_tagihan);
-        \Log::info("Total Denda: " . $total_denda);
-        \Log::info("Total Pembayaran: " . $total_pembayaran);
+        // Perbaikan logika pengecekan
+        $biaya_admin = $request->filled('custom_biaya_admin') ? (int)$request->input('biaya_admin') : $konfigurasi->biaya_admin;
+        $biaya_langganan = Abodemen::where('nomor_pelanggan', $nomor_pelanggan)->value('abodemen') ?? $konfigurasi->abodemen;
     
-        // Store the new invoice
-        Pembayaran::create([
+        $total_pembayaran = $request->total_tagihan + $total_denda + $biaya_admin + $biaya_langganan;
+    
+        // Debug total pembayaran
+        \Log::info('Calculated values:', [
+            'total_tagihan' => $request->total_tagihan,
+            'total_denda' => $total_denda,
+            'biaya_admin' => $biaya_admin,
+            'biaya_langganan' => $biaya_langganan,
+            'total_pembayaran' => $total_pembayaran
+        ]);
+    
+        $pembayaran = Pembayaran::create([
             'nomor_pelanggan' => $request->nomor_pelanggan,
             'total_pemakaian' => $request->total_pemakaian,
             'total_tagihan' => $request->total_tagihan,
-            'jumlah_dibayar' => 0,  // Set to 0 since it hasn't been paid yet
-            'tanggal_pembayaran' => null, // Set null because it's unpaid
-            'denda' => $total_denda, // Simpan nilai denda yang sudah dikoreksi
+            'jumlah_dibayar' => 0,
+            'tanggal_pembayaran' => null,
+            'denda' => $total_denda,
+            'biaya_admin' => $biaya_admin,
+            'biaya_langganan' => $biaya_langganan, // Ubah dari abodemen ke biaya_langganan
         ]);
     
         return redirect()->route('invoice.list')->with('success', 'Invoice berhasil dibuat.');
@@ -200,11 +232,19 @@ class InvoiceController extends Controller
         }
     
         $invoices = $query->get()->map(function ($invoice) {
-            // Ensure denda is non-negative
-            $invoice->denda = max(0, $invoice->denda); // Use max to prevent negative values
-    
+            // Pastikan denda tidak negatif
+            $invoice->denda = max(0, $invoice->denda);
+        
+            // Pastikan biaya_admin dan biaya_langganan ada
+            $invoice->biaya_admin = $invoice->biaya_admin ?? 0;
+            $invoice->biaya_langganan = $invoice->biaya_langganan ?? 0;
+        
+            // Hitung total pembayaran
+            $invoice->total_pembayaran = $invoice->total_tagihan + $invoice->denda + $invoice->biaya_admin + $invoice->biaya_langganan;
+        
             return $invoice;
         });
+        
     
         return view('invoice.list', compact('invoices'));
     }

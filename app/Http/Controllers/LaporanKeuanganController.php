@@ -8,6 +8,9 @@ use App\Models\Pembayaran;
 use App\Models\Konfigurasi;
 use Illuminate\Support\Facades\Response;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LaporanExport;
+
 
 class LaporanKeuanganController extends Controller
 {
@@ -103,6 +106,40 @@ class LaporanKeuanganController extends Controller
                 $pembayaran->jumlah_dibayar >= ($pembayaran->total_tagihan + $pembayaran->denda) && $pembayaran->jumlah_dibayar > 0
                     ? 'Lunas'
                     : 'Belum Lunas'
+            ]);
+        }
+
+        fclose($handle);
+
+        return Response::make('', 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+    public function export(Request $request)
+    {
+        // Ambil tanggal dari filter
+        $tanggal_mulai = $request->tanggal_mulai;
+        $tanggal_selesai = $request->tanggal_selesai;
+
+        // Ambil data pembayaran berdasarkan rentang tanggal
+        $pembayarans = Pembayaran::whereBetween('tanggal_pembayaran', [$tanggal_mulai, $tanggal_selesai])
+            ->orderBy('tanggal_pembayaran', 'desc')
+            ->get();
+
+        $filename = 'laporan_keuangan_' . date('Y-m-d') . '.csv';
+
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, ['Tanggal', 'Nomor Pelanggan', 'Total Pemakaian', 'Total Tagihan', 'Jumlah Dibayar', 'Status']);
+
+        foreach ($pembayarans as $pembayaran) {
+            fputcsv($handle, [
+                Carbon::parse($pembayaran->tanggal_pembayaran)->format('d-m-Y'),
+                $pembayaran->nomor_pelanggan,
+                number_format($pembayaran->total_pemakaian, 0, ',', '.') . ' KWH',
+                'Rp ' . number_format($pembayaran->total_tagihan, 0, ',', '.'),
+                'Rp ' . number_format($pembayaran->jumlah_dibayar, 0, ',', '.'),
+                $pembayaran->jumlah_dibayar >= $pembayaran->total_tagihan ? 'Lunas' : 'Belum Lunas'
             ]);
         }
 

@@ -61,8 +61,8 @@
         <a href="{{ route('dashboard') }}" class="btn btn-secondary">
             <i class="bi bi-house-door"></i> Kembali ke Dashboard
         </a>
-
-        
-
+        <a href="{{ route('laporan.export', ['tanggal_mulai' => $tanggal_mulai, 'tanggal_selesai' => $tanggal_selesai]) }}" class="btn btn-success">
+    <i class="bi bi-download"></i> Export CSV
+</a>
 
 @endsection

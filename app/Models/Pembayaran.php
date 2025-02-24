@@ -17,6 +17,8 @@ class Pembayaran extends Model {
         'jumlah_dibayar',
         'tanggal_pembayaran',
         'denda',
+        'biaya_admin',
+        'abodemen',
     ];
 
     // Tambahkan relasi ke model Pelanggan

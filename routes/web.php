@@ -10,6 +10,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\KonfigurasiController;
+use App\Http\Controllers\KwhController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\AbodemenController;
 
 Route::get('/', function () {
     return view('homepage');
@@ -56,8 +59,14 @@ Route::middleware(['auth', RoleMiddleware::class . ':kasir'])->group(function ()
     Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
     Route::post('/invoice/{id}/mark-unpaid', [InvoiceController::class, 'markUnpaid'])->middleware('admin')->name('invoice.markUnpaid');
     Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
+    Route::get('/abodemen', function () {
+        return view('abodemen');
+    })->name('abodemen.index');
+    
+    Route::post('/abodemen/update', [AbodemenController::class, 'update'])->name('abodemen.update');
     // Rute untuk export CSV
     Route::get('laporan/exportCSV', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
+    Route::get('/laporan/export', [LaporanKeuanganController::class, 'export'])->name('laporan.export');
     Route::get('/laporan/{nomor_pelanggan}/export-csv', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
 });
 
