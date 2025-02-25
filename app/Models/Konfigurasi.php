@@ -11,13 +11,9 @@ class Konfigurasi extends Model {
     protected $fillable = [
         'denda_bulanan', 
         'tarif_per_kwh',
-        'biaya_admin',
-        'abodemen'
     ];
 
     protected $casts = [
         'tarif_per_kwh' => 'array',
-        'biaya_admin' => 'decimal:2',
-        'abodemen' => 'decimal:2'
     ];
 }

@@ -7,7 +7,7 @@
     <header class="sticky top-0 z-50 bg-white shadow-md">
         <div class="flex justify-between items-center py-4 px-8 bg-gradient-to-r from-green-600 to-blue-700 text-white">
             <!-- Logo -->
-            <img alt="Listrik Pasar Cipanas logo" class="h-12" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRikenMtJmVcTQ89zGHcZ6KLH90xKhLxknNHg&s"/>
+            <img alt="Listrik Pasar Cipanas logo" class="h-12" src="{{ asset('images/image.png') }}"/>
             
             <!-- Navbar Links -->
             <nav class="hidden md:flex space-x-12 text-lg font-medium">

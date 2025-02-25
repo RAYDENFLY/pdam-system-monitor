@@ -11,12 +11,12 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\KonfigurasiController;
 use App\Http\Controllers\KwhController;
-use App\Http\Controllers\ContactController;
-use App\Http\Controllers\AbodemenController;
+use App\Http\Controllers\PengeluaranController;
 
 Route::get('/', function () {
     return view('homepage');
-});
+})->name('home');
+
 
 Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showRegisterForm'])->name('admin.register');
@@ -44,6 +44,11 @@ Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function ()
     Route::resource('/pelanggan', PelangganController::class)->parameters([
         'pelanggan' => 'nomor_pelanggan'
     ]);
+    Route::get('/pengeluaran/{id}/edit', [PengeluaranController::class, 'edit'])->name('pengeluaran.edit');
+    Route::put('/pengeluaran/{id}', [PengeluaranController::class, 'update'])->name('pengeluaran.update');
+    Route::delete('/pengeluaran/{id}', [PengeluaranController::class, 'destroy'])->name('pengeluaran.destroy');
+    Route::delete('/invoice/{id}', [InvoiceController::class, 'destroy'])->name('invoice.destroy');
+    Route::delete('/invoice/{id}', [InvoiceController::class, 'destroy'])->name('invoice.destroy');
     Route::get('/pelanggan/{nomor_pelanggan}/invoice', [PelangganController::class, 'invoice'])->name('pelanggan.invoice');
 });
 
@@ -59,14 +64,11 @@ Route::middleware(['auth', RoleMiddleware::class . ':kasir'])->group(function ()
     Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
     Route::post('/invoice/{id}/mark-unpaid', [InvoiceController::class, 'markUnpaid'])->middleware('admin')->name('invoice.markUnpaid');
     Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
-    Route::get('/abodemen', function () {
-        return view('abodemen');
-    })->name('abodemen.index');
-    
-    Route::post('/abodemen/update', [AbodemenController::class, 'update'])->name('abodemen.update');
+    Route::get('/pengeluaran', [PengeluaranController::class, 'index'])->name('pengeluaran.index');
+    Route::post('/pengeluaran', [PengeluaranController::class, 'store'])->name('pengeluaran.store');
     // Rute untuk export CSV
-    Route::get('laporan/exportCSV', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
-    Route::get('/laporan/export', [LaporanKeuanganController::class, 'export'])->name('laporan.export');
+    // Export CSV untuk laporan utama
+    Route::get('/laporan/export-csv', [LaporanKeuanganController::class, 'exportCsv'])->name('laporan.exportCsv');
     Route::get('/laporan/{nomor_pelanggan}/export-csv', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
 });
 
@@ -94,7 +96,6 @@ Route::post('/kwh/store', [KwhController::class, 'store'])->name('kwh.store');
 // ✅ Konfigurasi (khusus admin)
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/konfigurasi', [KonfigurasiController::class, 'index'])->name('konfigurasi.index');
-    Route::post('/contact/update', [ContactController::class, 'update'])->name('contact.update');
     Route::post('/konfigurasi/update', [KonfigurasiController::class, 'update'])->name('konfigurasi.update');
 });
 

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Pelanggan;
 use App\Models\Pembayaran;
 use Carbon\Carbon;
+use App\Models\Pengeluaran; 
 
 class DashboardController extends Controller
 {
@@ -24,9 +25,9 @@ class DashboardController extends Controller
         $pendapatanBulanIni = Pembayaran::where('tanggal_pembayaran', 'like', "$bulanIni%")
                                     ->whereColumn('jumlah_dibayar', '>=', 'total_tagihan')
                                     ->sum('jumlah_dibayar');
-
-        // ✅ Pengeluaran (contoh, jika ada tabel pengeluaran bisa diambil dari database)
-        $pengeluaranBulanIni = 500000; // Bisa diganti dengan query jika ada tabel pengeluaran
+        
+        // ✅ Jumlah pengeluaran bulan ini
+        $pengeluaranBulanIni = Pengeluaran::where('tanggal', 'like', "$bulanIni%")->sum('jumlah');
 
         // ✅ Jumlah pelanggan yang belum bayar bulan ini
         $jumlahBelumBayar = Pelanggan::whereDoesntHave('pembayarans', function ($query) use ($bulanIni) {

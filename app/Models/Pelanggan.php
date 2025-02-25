@@ -31,4 +31,12 @@ class Pelanggan extends Model
     {
         return $this->hasMany(Pembayaran::class, 'nomor_pelanggan', 'nomor_pelanggan');
     }
+
+    // Add this to your Pelanggan model
+    public function getTarifDayaAttribute()
+    {
+        $konfigurasi = Konfigurasi::first();
+        $tarif = $konfigurasi->tarif_per_kwh[$this->kategori_tarif] ?? 1500;
+        return $this->kategori_tarif . ' / ' . $tarif . ' per kWh';
+    }
 }

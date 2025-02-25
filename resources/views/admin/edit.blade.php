@@ -5,7 +5,7 @@
     <h2 class="mb-4">Edit Karyawan</h2>
 
     <form action="{{ route('admin.updateUser', $user->id) }}" method="POST">
-        @csrf
+    @csrf
         <div class="mb-3">
             <label class="form-label">Nama</label>
             <input type="text" name="name" class="form-control" value="{{ $user->name }}" required>
@@ -14,6 +14,14 @@
         <div class="mb-3">
             <label class="form-label">Email</label>
             <input type="email" name="email" class="form-control" value="{{ $user->email }}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select name="role" class="form-control" required>
+                <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Admin</option>
+                <option value="kasir" {{ $user->role == 'kasir' ? 'selected' : '' }}>Kasir</option>
+                <option value="teknisi" {{ $user->role == 'teknisi' ? 'selected' : '' }}>Teknisi</option>
+            </select>
         </div>
 
         <button type="submit" class="btn btn-primary">Update</button>

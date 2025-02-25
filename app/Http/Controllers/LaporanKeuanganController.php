@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Response;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LaporanExport;
+use App\Models\Pengeluaran;
 
 
 class LaporanKeuanganController extends Controller
@@ -22,11 +23,17 @@ class LaporanKeuanganController extends Controller
 
         // Ambil data pembayaran berdasarkan rentang tanggal
         $pembayarans = Pembayaran::whereBetween('tanggal_pembayaran', [$tanggal_mulai, $tanggal_selesai])->get();
+        
 
         // Hitung total pemasukan
         $total_pemasukan = $pembayarans->sum('jumlah_dibayar');
 
-        return view('laporan.index', compact('pembayarans', 'total_pemasukan', 'tanggal_mulai', 'tanggal_selesai'));
+          // Ambil data pengeluaran (Pengeluaran)
+            $pengeluarans = Pengeluaran::whereBetween('tanggal', [$tanggal_mulai, $tanggal_selesai])->get();
+            $total_pengeluaran = $pengeluarans->sum('jumlah');
+
+
+        return view('laporan.index', compact('pembayarans', 'total_pemasukan', 'tanggal_mulai', 'tanggal_selesai','pengeluarans','total_pengeluaran'));
     }
 
     public function show($nomor_pelanggan)
@@ -87,35 +94,71 @@ class LaporanKeuanganController extends Controller
     
 
     // EXPORT TO CSV
-    public function exportCSV($nomor_pelanggan)
+public function exportCsv(Request $request)
     {
-        $pelanggan = Pelanggan::where('nomor_pelanggan', $nomor_pelanggan)->firstOrFail();
-        $pembayarans = Pembayaran::where('nomor_pelanggan', $nomor_pelanggan)->orderBy('tanggal_pembayaran', 'desc')->get();
-
-        $filename = 'laporan_keuangan_' . $pelanggan->nomor_pelanggan . '.csv';
-
-        $handle = fopen('php://output', 'w');
-        fputcsv($handle, ['Tanggal', 'Total Tagihan', 'Denda', 'Jumlah Dibayar', 'Status']);
-
+        $tanggal_mulai = $request->input('tanggal_mulai', now()->startOfMonth()->toDateString());
+        $tanggal_selesai = $request->input('tanggal_selesai', now()->endOfMonth()->toDateString());
+    
+        // Ambil data pemasukan
+        $pembayarans = Pembayaran::whereBetween('tanggal_pembayaran', [$tanggal_mulai, $tanggal_selesai])->get();
+        
+        // Ambil data pengeluaran
+        $pengeluarans = Pengeluaran::whereBetween('tanggal', [$tanggal_mulai, $tanggal_selesai])->get();
+    
+        // Header CSV
+        $csvData = [];
+        $csvData[] = ["Laporan Keuangan", "Periode: $tanggal_mulai - $tanggal_selesai"];
+        $csvData[] = [""];
+        
+        // Total Pemasukan
+        $totalPemasukan = $pembayarans->sum('jumlah_dibayar');
+        $csvData[] = ["Total Pemasukan", "Rp " . number_format($totalPemasukan, 0, ',', '.')];
+    
+        // Header tabel pemasukan
+        $csvData[] = ["Tanggal", "Nomor Pelanggan", "Total Pemakaian (KWH)", "Total Tagihan", "Jumlah Dibayar"];
         foreach ($pembayarans as $pembayaran) {
-            fputcsv($handle, [
-                $pembayaran->tanggal_pembayaran ?? '-',
-                'Rp ' . number_format($pembayaran->total_tagihan ?? 0, 0, ',', '.'),
-                'Rp ' . number_format($pembayaran->denda ?? 0, 0, ',', '.'),
-                'Rp ' . number_format($pembayaran->jumlah_dibayar ?? 0, 0, ',', '.'),
-                $pembayaran->jumlah_dibayar >= ($pembayaran->total_tagihan + $pembayaran->denda) && $pembayaran->jumlah_dibayar > 0
-                    ? 'Lunas'
-                    : 'Belum Lunas'
-            ]);
+            $csvData[] = [
+                $pembayaran->tanggal_pembayaran,
+                $pembayaran->nomor_pelanggan,
+                number_format($pembayaran->total_pemakaian, 0, ',', '.'),
+                "Rp " . number_format($pembayaran->total_tagihan, 0, ',', '.'),
+                "Rp " . number_format($pembayaran->jumlah_dibayar, 0, ',', '.'),
+            ];
         }
-
+    
+        // Tambahkan pemisah antar bagian CSV
+        $csvData[] = [""];
+        
+        // Total Pengeluaran
+        $totalPengeluaran = $pengeluarans->sum('jumlah');
+        $csvData[] = ["Total Pengeluaran", "Rp " . number_format($totalPengeluaran, 0, ',', '.')];
+    
+        // Header tabel pengeluaran
+        $csvData[] = ["Tanggal", "Jumlah", "Keterangan"];
+        foreach ($pengeluarans as $pengeluaran) {
+            $csvData[] = [
+                $pengeluaran->tanggal,
+                "Rp " . number_format($pengeluaran->jumlah, 0, ',', '.'),
+                $pengeluaran->keterangan,
+            ];
+        }
+    
+        // Generate CSV content
+        $filename = "Laporan_Keuangan_$tanggal_mulai\_$tanggal_selesai.csv";
+        $handle = fopen('php://output', 'w');
+        
+        foreach ($csvData as $row) {
+            fputcsv($handle, $row);
+        }
+    
         fclose($handle);
-
+    
         return Response::make('', 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => "attachment; filename=$filename",
         ]);
     }
+    
     public function export(Request $request)
     {
         // Ambil tanggal dari filter

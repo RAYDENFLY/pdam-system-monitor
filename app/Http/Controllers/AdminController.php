@@ -64,18 +64,22 @@ class AdminController extends Controller
     public function updateUser(Request $request, $id)
     {
         $user = User::findOrFail($id);
-
+    
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'role' => 'required|in:admin,kasir,teknisi',
         ]);
-
-        $user->update($request->only(['name', 'email', 'role']));
-
+    
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+        ]);
+    
         return redirect()->route('admin.register')->with('success', 'Data karyawan berhasil diperbarui.');
     }
-
+    
     // Hapus user
     public function deleteUser($id)
     {

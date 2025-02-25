@@ -19,13 +19,25 @@
     <form action="{{ route('pelanggan.index') }}" method="GET" class="mb-3">
         <div class="row">
             <!-- Filter Nama -->
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label">Nama Pelanggan</label>
                 <input type="text" name="nama" class="form-control" value="{{ request('nama') }}">
             </div>
 
+            <!-- Filter Alamat -->
+            <div class="col-md-4">
+                <label class="form-label">Alamat</label>
+                <input type="text" name="alamat" class="form-control" value="{{ request('alamat') }}">
+            </div>
+
+            <!-- Filter Blok Rumah -->
+            <div class="col-md-4">
+                <label class="form-label">Blok Rumah</label>
+                <input type="text" name="block_rumah" class="form-control" value="{{ request('block_rumah') }}">
+            </div>
+
             <!-- Filter Kategori Tarif -->
-            <div class="col-md-6">
+            <div class="col-md-4 mt-3">
                 <label class="form-label">Kategori Tarif</label>
                 <select name="kategori_tarif" class="form-control">
                     <option value="">Semua</option>
@@ -49,7 +61,8 @@
             <tr>
                 <th>Nomor Pelanggan</th>
                 <th>Nama</th>
-                <th>Lokasi</th>
+                <th>Alamat</th>
+                <th>Blok Rumah</th>
                 <th>No. Telepon</th>
                 <th>Tanggal Join</th>
                 <th>Kategori Tarif</th>
@@ -65,18 +78,21 @@
                 </td>
                 <td>{{ $pelanggan->nama }}</td>
                 <td>{{ $pelanggan->alamat }}</td>
+                <td>{{ $pelanggan->block_rumah }}</td>
                 <td>{{ $pelanggan->no_telepon }}</td>
                 <td>{{ $pelanggan->tanggal_join }}</td>
                 <td>{{ $pelanggan->kategori_tarif }}</td>
                 <td>{{ $pelanggan->kwh_terakhir }}</td>
                 <td>
                     <a href="{{ route('invoice.show', $pelanggan->nomor_pelanggan) }}" class="btn btn-info btn-sm">Cetak Invoice</a>
+                    @if(Auth::user()->role == 'admin')
                     <a href="{{ route('pelanggan.edit', $pelanggan->nomor_pelanggan) }}" class="btn btn-warning btn-sm">Edit</a>
                     <form action="{{ route('pelanggan.destroy', $pelanggan->nomor_pelanggan) }}" method="POST" style="display:inline;">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Hapus pelanggan ini?')">Hapus</button>
                     </form>
+                    @endif
                 </td>
             </tr>
             @endforeach

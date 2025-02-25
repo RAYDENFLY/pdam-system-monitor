@@ -17,6 +17,7 @@
 
     <!-- Tombol Navigasi -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    @if(Auth::user()->role == 'admin')
         <a href="{{ route('admin.register') }}" class="bg-blue-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-blue-600 transition">
             <i class="fas fa-shield-alt text-2xl mr-2"></i> Admin
         </a>
@@ -24,10 +25,17 @@
         <a href="{{ route('pelanggan.index') }}" class="bg-blue-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-blue-600 transition">
             <i class="fas fa-users text-2xl mr-2"></i> Kelola Pelanggan
         </a>
+        @endif
 
+        @if(in_array(Auth::user()->role, ['admin', 'kasir']))
         <a href="{{ route('pembayaran.index') }}" class="bg-green-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-green-600 transition">
             <i class="fas fa-cash-register text-2xl mr-2"></i> Transaksi
         </a>
+
+        <a href="{{ route('pengeluaran.index') }}" class="bg-green-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-green-600 transition">
+       <i class="fas fa-money-bill-wave text-2xl mr-2"></i> Tambah Pengeluaran
+       </a>
+
 
         <a href="{{ route('laporan.index') }}" class="bg-yellow-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-yellow-600 transition">
             <i class="fas fa-file-invoice-dollar text-2xl mr-2"></i> Laporan Keuangan
@@ -36,6 +44,8 @@
         <button class="bg-gray-700 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-gray-800 transition" data-bs-toggle="modal" data-bs-target="#invoiceModal">
             <i class="fas fa-file-invoice text-2xl mr-2"></i> Invoice
         </button>
+
+        @endif
 
         <!-- ✅ Tombol Tambah & Data Pelanggan -->
         <a href="{{ route('user.pelanggan') }}" class="bg-purple-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-purple-600 transition">

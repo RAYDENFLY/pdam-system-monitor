@@ -12,26 +12,29 @@ class PelangganController extends Controller
 {
     public function index(Request $request)
     {
-        $pelanggans = Pelanggan::all();
-        return view('pelanggan.index', compact('pelanggans'));
-
         $query = Pelanggan::query();
-
-    // Filter berdasarkan nama
-    if ($request->has('nama') && !empty($request->nama)) {
-        $query->where('nama', 'like', '%' . $request->nama . '%');
+    
+        if ($request->filled('nama')) {
+            $query->where('nama', 'LIKE', '%' . $request->nama . '%');
+        }
+    
+        if ($request->filled('alamat')) {
+            $query->where('alamat', 'LIKE', '%' . $request->alamat . '%');
+        }
+    
+        if ($request->filled('block_rumah')) {
+            $query->where('block_rumah', 'LIKE', '%' . $request->block_rumah . '%');
+        }
+    
+        if ($request->filled('kategori_tarif')) {
+            $query->where('kategori_tarif', $request->kategori_tarif);
+        }
+    
+        $pelanggans = $query->get();
+    
+        return view('pelanggan.index', compact('pelanggans'));
     }
-
-    // Filter berdasarkan kategori tarif
-    if ($request->has('kategori_tarif') && !empty($request->kategori_tarif)) {
-        $query->where('kategori_tarif', $request->kategori_tarif);
-    }
-
-    $pelanggans = $query->get();
-
-    return view('pelanggan.index', compact('pelanggans'));
-
-    }
+    
     
     public function create()
     {
@@ -88,7 +91,7 @@ class PelangganController extends Controller
     public function update(Request $request, $nomor_pelanggan)
     {
         $request->validate([
-            'nomor_pelanggan' => 'required|unique:pelanggans',
+            'nomor_pelanggan' => 'required|unique:pelanggans,nomor_pelanggan,' . $nomor_pelanggan . ',nomor_pelanggan',        
             'nama' => 'required|string|max:255',
             'alamat' => 'required|string',
             'no_telepon' => 'required|string',

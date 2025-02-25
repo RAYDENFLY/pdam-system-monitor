@@ -55,38 +55,32 @@
                 <input type="number" id="total_pemakaian" name="total_pemakaian" class="form-control" readonly>
             </div>
 
+
+                                <div class="mb-3">
+                <label for="biaya_admin" class="form-label">Biaya Admin</label>
+                <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" name="biaya_admin" id="biaya_admin" class="form-control" value="2500" required>
+                </div>
+                <small class="text-muted">*Nominal dapat dirubah</small>
+            </div>
+
+            <div class="mb-3">
+                <label for="biaya_abodemen" class="form-label">Biaya Abodemen</label>
+                <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" name="biaya_abodemen" id="biaya_abodemen" class="form-control" value="0" required>
+                </div>
+                <small class="text-muted">*Silahkan Masukan Nominal</small>
+            </div>
+
+
             <!-- Total Tagihan -->
             <div class="mb-3">
                 <label class="form-label"><i class="fas fa-money-bill-wave"></i> Total Tagihan</label>
                 <span id="total_tagihan_display" class="form-control">Rp 0</span>
                 <input type="hidden" id="total_tagihan" name="total_tagihan">
             </div>
-
-            <!-- Biaya Admin (Customizable) -->
-            <div class="mb-3">
-                <label class="form-label"><i class="fas fa-cash-register"></i> Biaya Admin</label>
-                <div class="input-group">
-                    <input type="checkbox" id="custom_biaya_admin" name="custom_biaya_admin" class="form-check-input me-2">
-                    <input type="number" id="biaya_admin" name="biaya_admin" class="form-control" 
-                        value="{{ old('biaya_admin', $konfigurasi->biaya_admin) }}" readonly>
-                </div>
-            </div>
-
-           <!-- Biaya Abodemen (Customizable) -->
-                <div class="mb-3">
-            <label class="form-label"><i class="fas fa-file-invoice"></i> Biaya Abodemen</label>
-            <div class="input-group">
-                @if(auth()->user()->role === 'admin' || auth()->user()->role === 'kasir')
-                    <input type="number" id="abodemen" name="abodemen" class="form-control"
-                        value="{{ old('abodemen', 10000) }}">
-                @else
-                    <input type="number" id="abodemen" name="abodemen" class="form-control"
-                        value="10000" readonly>
-                @endif
-            </div>
-        </div>
-
-
 
             <!-- Denda -->
             <div class="mb-3">
@@ -113,6 +107,7 @@
 document.getElementById('selectPelanggan').addEventListener('change', function() {
     let selected = this.options[this.selectedIndex];
 
+    console.log("Pelanggan dipilih:", selected.value);
     document.getElementById('nama').value = selected.dataset.nama || '';
     document.getElementById('alamat').value = selected.dataset.alamat || '';
     document.getElementById('kwh_bulan_lalu').value = selected.dataset.kwh_bulan_lalu || 0;
@@ -121,85 +116,34 @@ document.getElementById('selectPelanggan').addEventListener('change', function()
     hitungTagihan();
 });
 
-document.getElementById('custom_abodemen').addEventListener('change', function() {
-    let abodemenInput = document.getElementById('abodemen');
-
-    if (this.checked) {
-        abodemenInput.removeAttribute('readonly'); // Bisa di-edit
-        abodemenInput.value = ''; // Kosongkan agar user bisa input
-    } else {
-        abodemenInput.setAttribute('readonly', true); // Kunci lagi
-        abodemenInput.value = 5000; // Kembali ke default
-    }
-
-    hitungTagihan();
-});
-
-document.getElementById('abodemen').addEventListener('input', function() {
-    hitungTagihan();
-});
-
-
-// Pastikan form tidak readonly saat submit
-document.querySelector('form').addEventListener('submit', function(e) {
-    // Hapus readonly dari semua input yang mungkin custom
-    if (document.getElementById('custom_abodemen').checked) {
-        document.getElementById('abodemen').removeAttribute('readonly');
-    }
-    if (document.getElementById('custom_biaya_admin').checked) {
-        document.getElementById('biaya_admin').removeAttribute('readonly');
-    }
-});
-
 document.getElementById('kwh_terakhir').addEventListener('input', hitungTagihan);
-document.getElementById('custom_biaya_admin').addEventListener('change', toggleCustomInput);
-document.getElementById('custom_abodemen').addEventListener('change', toggleCustomInput);
-
-function toggleCustomInput() {
-    const isAdminCustom = document.getElementById('custom_biaya_admin').checked;
-    const isAbodemenCustom = document.getElementById('custom_abodemen').checked;
-    
-    console.log('Custom Admin:', isAdminCustom);
-    console.log('Custom Abodemen:', isAbodemenCustom);
-    
-    document.getElementById('biaya_admin').readOnly = !isAdminCustom;
-    document.getElementById('abodemen').readOnly = !isAbodemenCustom;
-    
-    // Log nilai saat ini
-    console.log('Biaya Admin:', document.getElementById('biaya_admin').value);
-    console.log('Abodemen:', document.getElementById('abodemen').value);
-    
-    hitungTagihan();
-}
-
 
 function hitungTagihan() {
     let kwhBulanLalu = parseInt(document.getElementById('kwh_bulan_lalu').value) || 0;
     let kwhTerakhir = parseInt(document.getElementById('kwh_terakhir').value) || 0;
     let totalPemakaian = Math.max(0, kwhTerakhir - kwhBulanLalu);
-
+    
     document.getElementById('total_pemakaian').value = totalPemakaian;
-
+    
     let tarifPerKwh = 1500;
     let totalTagihan = totalPemakaian * tarifPerKwh;
 
     document.getElementById('total_tagihan').value = totalTagihan;
     document.getElementById('total_tagihan_display').textContent = formatRupiah(totalTagihan);
 
-    let biayaAdmin = parseInt(document.getElementById('biaya_admin').value) || 0;
-    let abodemen = parseInt(document.getElementById('abodemen').value) || 0;
+    let biayaAdmin = parseInt(document.querySelector('[name="biaya_admin"]').value) || 0;
+    let biayaAbodemen = parseInt(document.querySelector('[name="biaya_abodemen"]').value) || 0;
 
     let nomorPelanggan = document.getElementById('selectPelanggan').value;
     if (nomorPelanggan) {
         fetch(`/get-denda/${nomorPelanggan}`)
             .then(response => response.json())
             .then(data => {
-                // Pastikan denda selalu positif
                 let denda = Math.abs(data.denda || 0);
                 document.getElementById('denda').value = denda;
                 document.getElementById('denda_display').textContent = formatRupiah(denda);
 
-                let totalPembayaran = totalTagihan + denda + biayaAdmin + abodemen;
+                let totalPembayaran = totalTagihan + denda + biayaAdmin + biayaAbodemen;
                 document.getElementById('total_pembayaran').value = totalPembayaran;
                 document.getElementById('total_pembayaran_display').textContent = formatRupiah(totalPembayaran);
             })
@@ -208,21 +152,25 @@ function hitungTagihan() {
                 document.getElementById('denda').value = 0;
                 document.getElementById('denda_display').textContent = formatRupiah(0);
 
-                let totalPembayaran = totalTagihan + biayaAdmin + abodemen;
+                let totalPembayaran = totalTagihan + biayaAdmin + biayaAbodemen;
                 document.getElementById('total_pembayaran').value = totalPembayaran;
                 document.getElementById('total_pembayaran_display').textContent = formatRupiah(totalPembayaran);
             });
     } else {
-        // Jika tidak ada nomor pelanggan, hitung tanpa denda
-        let totalPembayaran = totalTagihan + biayaAdmin + abodemen;
+        let totalPembayaran = totalTagihan + biayaAdmin + biayaAbodemen;
         document.getElementById('total_pembayaran').value = totalPembayaran;
         document.getElementById('total_pembayaran_display').textContent = formatRupiah(totalPembayaran);
     }
 }
 
+// Pastikan juga biaya admin & abodemen dihitung ulang saat user mengubah nilainya
+document.querySelector('[name="biaya_admin"]').addEventListener('input', hitungTagihan);
+document.querySelector('[name="biaya_abodemen"]').addEventListener('input', hitungTagihan);
 
 function formatRupiah(angka) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(angka);
 }
 </script>
+
+
 @endsection

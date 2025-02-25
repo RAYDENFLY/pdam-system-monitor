@@ -71,8 +71,8 @@
         }
     },
     "files": [
-    "app/Helpers/TerbilangHelper.php"
-],
+        "app/Helpers/Terbilang.php"
+    ],
     "minimum-stability": "stable",
     "prefer-stable": true
 }

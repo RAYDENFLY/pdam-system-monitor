@@ -4,8 +4,8 @@
 <div class="container">
     <h2 class="mb-4">Daftar Invoice</h2>
 
-         <!-- Tombol Kembali ke Dashboard -->
-         <a href="{{ route('dashboard') }}" class="btn btn-secondary mb-3">
+    <!-- Tombol Kembali ke Dashboard -->
+    <a href="{{ route('dashboard') }}" class="btn btn-secondary mb-3">
         <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
     </a>
 
@@ -38,7 +38,8 @@
             <tr>
                 <td>{{ $invoice->pelanggan->nomor_pelanggan }}</td>
                 <td>{{ $invoice->pelanggan->nama }}</td>
-                <td>Rp {{ number_format($totalPembayaran, 0, ',', '.') }}</td>
+                <td>Rp {{ number_format(($invoice->total_tagihan ?? 0) + ($invoice->denda ?? 0) + ($invoice->biaya_admin ?? 0) + ($invoice->biaya_abodemen ?? 0), 0, ',', '.') }}</td>
+
                 <td>Rp {{ number_format($invoice->jumlah_dibayar, 0, ',', '.') }}</td>
                 <td>
                     @if ($invoice->isLunas())
@@ -53,26 +54,36 @@
                         Cetak Invoice
                     </a>
 
-                                    <!-- Jika belum lunas, tampilkan tombol Tandai Lunas -->
-                @if (!$invoice->isLunas())
-                    <form method="POST" action="{{ route('invoice.updateStatus', $invoice->id) }}" style="display:inline;">
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Tandai invoice ini sebagai lunas?')">
-                            Tandai Lunas
-                        </button>
-                    </form>
-                @endif
+                    <!-- Jika belum lunas, tampilkan tombol Tandai Lunas -->
+                    @if (!$invoice->isLunas())
+                        <form method="POST" action="{{ route('invoice.updateStatus', $invoice->id) }}" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Tandai invoice ini sebagai lunas?')">
+                                Tandai Lunas
+                            </button>
+                        </form>
+                    @endif
 
-                <!-- Jika sudah lunas dan user adalah admin, tampilkan tombol Tandai Tidak Lunas -->
-                @if ($invoice->isLunas() && auth()->user()->role == 'admin')
-                    <form method="POST" action="{{ route('invoice.markUnpaid', $invoice->id) }}" style="display:inline;">
-                        @csrf
-                        @method('POST')
-                        <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Tandai invoice ini sebagai belum lunas?')">
-                            Tandai Tidak Lunas
-                        </button>
-                    </form>
-                @endif
+                    <!-- Jika sudah lunas dan user adalah admin, tampilkan tombol Tandai Tidak Lunas -->
+                    @if ($invoice->isLunas() && auth()->user()->role == 'admin')
+                        <form method="POST" action="{{ route('invoice.markUnpaid', $invoice->id) }}" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Tandai invoice ini sebagai belum lunas?')">
+                                Tandai Tidak Lunas
+                            </button>
+                        </form>
+                    @endif
+
+                    <!-- Tombol Hapus (Hanya untuk Admin) -->
+                    @if (auth()->user()->role == 'admin')
+                        <form method="POST" action="{{ route('invoice.destroy', $invoice->id) }}" style="display:inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus invoice ini?')">
+                                Hapus
+                            </button>
+                        </form>
+                    @endif
                 </td>
             </tr>
             @endforeach
