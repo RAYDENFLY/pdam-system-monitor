@@ -26,6 +26,8 @@ Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function ()
     Route::post('/admin/register', [AdminController::class, 'storeUser'])->name('admin.storeUser');
 });
 
+Route::get('/cek-pelanggan/{nomor_pelanggan}', [PelangganController::class, 'cekPelanggan']);
+
 Route::post('/logout', function () {
     Auth::logout();
     return redirect('/login')->with('success', 'Berhasil logout.');
@@ -53,8 +55,15 @@ Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function ()
 });
 
 Route::middleware(['auth', RoleMiddleware::class . ':kasir'])->group(function () {
-    Route::get('/laporan', [LaporanKeuanganController::class, 'index'])->name('laporan.index');
+    // ✅ Pastikan rute statis didefinisikan lebih dahulu
+    Route::get('/transaksi/pembayaran', [InvoiceController::class, 'pembayaran'])->name('transaksi.pembayaran');
+    Route::post('/invoice/search', [InvoiceController::class, 'search'])->name('invoice.search3343eqs4zrdrffe3aqw2');
+    Route::get('/laporan/keseluruhan', [LaporanKeuanganController::class, 'keseluruhan'])->name('laporan.keseluruhan');
+    Route::get('/laporan/harian', [LaporanKeuanganController::class, 'harian'])->name('laporan.harian');
+    // 🔽 Baru setelah itu rute yang menggunakan parameter
     Route::get('/laporan/{nomor_pelanggan}', [LaporanKeuanganController::class, 'show'])->name('laporan.show');
+    Route::get('/laporan', [LaporanKeuanganController::class, 'index'])->name('laporan.index');
+
     Route::get('/pembayaran', [PembayaranController::class, 'index'])->name('pembayaran.index');
     Route::post('/buat-invoice', [InvoiceController::class, 'store'])->name('invoice.store');
     Route::get('/daftar-invoice', [InvoiceController::class, 'list'])->name('invoice.list');
@@ -66,8 +75,8 @@ Route::middleware(['auth', RoleMiddleware::class . ':kasir'])->group(function ()
     Route::post('/invoice/{id}/update-status', [InvoiceController::class, 'updateStatus'])->name('invoice.updateStatus');
     Route::get('/pengeluaran', [PengeluaranController::class, 'index'])->name('pengeluaran.index');
     Route::post('/pengeluaran', [PengeluaranController::class, 'store'])->name('pengeluaran.store');
-    // Rute untuk export CSV
-    // Export CSV untuk laporan utama
+    
+    // Export CSV
     Route::get('/laporan/export-csv', [LaporanKeuanganController::class, 'exportCsv'])->name('laporan.exportCsv');
     Route::get('/laporan/{nomor_pelanggan}/export-csv', [LaporanKeuanganController::class, 'exportCSV'])->name('laporan.exportCSV');
 });

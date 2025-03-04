@@ -39,25 +39,25 @@
                 <p>TAGIHAN LISTRIK:</p>
                 <p>ABUDEMEN:</p>
                 <p>BI ADM:</p>
+                <p>DENDA:</p>
                 <p>TOTAL:</p>
             </div>
             <div class="text-right">
                 <p>Rp {{ number_format($total_tagihan, 0, ',', '.') }}</p>
                 <p>Rp {{ number_format($pembayaranTerakhir->biaya_abodemen ?? 0, 0, ',', '.') }}</p>
                 <p>Rp {{ number_format($pembayaranTerakhir->biaya_admin ?? 2500, 0, ',', '.') }}</p>
-                <p>Rp {{ number_format($total_tagihan + ($pembayaranTerakhir->biaya_admin ?? 2500) + ($pembayaranTerakhir->biaya_abodemen ?? 0), 0, ',', '.') }}</p>
+                <p>Rp {{ number_format($pembayaranTerakhir->denda ?? 0, 0, ',', '.') }}</p>
+                <p>Rp {{ number_format($total_tagihan + ($pembayaranTerakhir->biaya_admin ?? 2500) + ($pembayaranTerakhir->biaya_abodemen ?? 0) + ($pembayaranTerakhir->denda ?? 0), 0, ',', '.') }}</p>
             </div>
         </div>
 
-
-
         <!-- Total Pembayaran dalam kata -->
         <div class="text-center font-italic my-3">
-        // {{ ucwords(\App\Helpers\Terbilang::make($total_tagihan + ($pembayaranTerakhir->biaya_admin ?? 2500) + ($pembayaranTerakhir->biaya_abodemen ?? 0))) }} Rupiah //
+        // {{ ucwords(\App\Helpers\Terbilang::make($total_tagihan + ($pembayaranTerakhir->biaya_admin ?? 2500) + ($pembayaranTerakhir->biaya_abodemen ?? 0) + ($pembayaranTerakhir->denda ?? 0))) }} Rupiah //
         </div>
 
-                <!-- Tanggal Pembayaran & Status -->
-                <div class="mt-3 flex justify-between items-center">
+        <!-- Tanggal Pembayaran & Status -->
+        <div class="mt-3 flex justify-between items-center">
             <p><strong>Tanggal Pembayaran Terakhir:</strong> 
                 {{ $pelanggan->tanggal_pembayaran_terakhir ? \Carbon\Carbon::parse($pelanggan->tanggal_pembayaran_terakhir)->format('d M Y') : '-' }}
             </p>
@@ -71,13 +71,13 @@
                 {{ $sudahTerbayar ? 'Lunas' : 'Belum Dibayar' }}
             </span>
         </div>
-      
+
         <!-- Tombol Aksi -->
         <div class="no-print d-flex justify-content-between mt-4 print:hidden">
             <button onclick="window.print()" class="btn btn-primary">
                 <i class="fas fa-print"></i> Cetak Invoice
             </button>
-            <a href="{{ auth()->check() ? route('dashboard') : route('home') }}" class="btn btn-secondary">
+            <a href="{{ auth()->check() ? route('invoice.list') : route('home') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Kembali
             </a>
         </div>

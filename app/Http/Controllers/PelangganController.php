@@ -187,5 +187,9 @@ class PelangganController extends Controller
 
     return view('pelanggan.history', compact('pelanggan', 'pembayarans'));
 }
-
+    public function cekPelanggan($nomor_pelanggan)
+{
+    $exists = Pelanggan::where('nomor_pelanggan', $nomor_pelanggan)->exists();
+    return response()->json(['exists' => $exists]);
+}
 }

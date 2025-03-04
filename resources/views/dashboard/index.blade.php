@@ -37,14 +37,39 @@
        </a>
 
 
-        <a href="{{ route('laporan.index') }}" class="bg-yellow-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-yellow-600 transition">
+       <button class="bg-yellow-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-yellow-600 transition" data-bs-toggle="modal" data-bs-target="#laporanModal">
             <i class="fas fa-file-invoice-dollar text-2xl mr-2"></i> Laporan Keuangan
-        </a>
+        </button>
+
+        <div class="modal fade" id="laporanModal" tabindex="-1" aria-labelledby="laporanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="laporanModalLabel">Pilih Laporan Keuangan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <a href="{{ route('laporan.index') }}" class="btn btn-primary btn-lg w-100 mb-2">
+                    <i class="fas fa-file-invoice-dollar"></i> Laporan Umum
+                </a>
+                <a href="{{ route('laporan.keseluruhan') }}" class="btn btn-success btn-lg w-100 mb-2">
+                    <i class="fas fa-file-alt"></i> Laporan Keseluruhan
+                </a>
+                <a href="{{ route('laporan.harian') }}" class="btn btn-warning btn-lg w-100">
+                    <i class="fas fa-calendar-day"></i> Laporan Harian
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 
         <button class="bg-gray-700 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-gray-800 transition" data-bs-toggle="modal" data-bs-target="#invoiceModal">
             <i class="fas fa-file-invoice text-2xl mr-2"></i> Invoice
         </button>
-
+        <a href="{{ route('transaksi.pembayaran') }}n" class="bg-teal-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-teal-600 transition">
+            <i class="fas fa-credit-card text-2xl mr-2"></i> Pembayaran
+        </a>
         @endif
 
         <!-- ✅ Tombol Tambah & Data Pelanggan -->

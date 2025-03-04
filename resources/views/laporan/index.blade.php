@@ -2,7 +2,10 @@
 
 @section('content')
 <div class="container">
-    <h2 class="mb-4 text-center">Laporan Keuangan</h2>
+<h2 class="text-3xl font-bold text-gray-800 text-center mb-6">
+    Laporan <span class="text-blue-600">Umum</span>
+</h2>
+
 
     <!-- Form Filter Tanggal -->
     <form method="GET" action="{{ route('laporan.index') }}" class="mb-4">
@@ -32,30 +35,39 @@
     <h4 class="mt-5 mb-3">Laporan Pemasukan</h4>
     <div class="table-responsive">
         <table class="table table-striped table-bordered">
-            <thead class="table-dark">
-                <tr>
-                    <th>Tanggal</th>
-                    <th>Nomor Pelanggan</th>
-                    <th>Total Pemakaian</th>
-                    <th>Total Tagihan</th>
-                    <th>Jumlah Dibayar</th>
-                </tr>
+        <thead class="table-dark">
+        <tr>
+            <th>Tanggal</th>
+            <th>Nomor Pelanggan</th>
+            <th>Total Pemakaian</th>
+            <th>Tarif Tagihan</th>
+            <th>Biaya Admin</th>
+            <th>Biaya Abodemen</th>
+            <th>Total Tagihan</th>
+            <th>Denda</th>
+            <th>Total Pembayaran</th>
+        </tr>
+
             </thead>
             <tbody>
-                @foreach ($pembayarans as $pembayaran)
-                <tr>
-                    <td>{{ \Carbon\Carbon::parse($pembayaran->tanggal_pembayaran)->format('d-m-Y') }}</td>
-                    <td>
-                        <a href="{{ route('laporan.show', $pembayaran->nomor_pelanggan) }}" class="text-primary font-weight-bold">
-                            {{ $pembayaran->nomor_pelanggan }}
-                        </a>
-                    </td>
-                    <td>{{ number_format($pembayaran->total_pemakaian, 0, ',', '.') }} KWH</td>
-                    <td>Rp {{ number_format($pembayaran->total_tagihan, 0, ',', '.') }}</td>
-                    <td>Rp {{ number_format($pembayaran->jumlah_dibayar, 0, ',', '.') }}</td>
-                </tr>
-                @endforeach
-            </tbody>
+    @foreach ($pembayarans as $pembayaran)
+    <tr>
+        <td>{{ \Carbon\Carbon::parse($pembayaran->tanggal_pembayaran)->format('d-m-Y') }}</td>
+        <td>
+            <a href="{{ route('laporan.show', $pembayaran->nomor_pelanggan) }}" class="text-primary font-weight-bold">
+                {{ $pembayaran->nomor_pelanggan }}
+            </a>
+        </td>
+        <td>{{ number_format($pembayaran->total_pemakaian, 0, ',', '.') }} KWH</td>
+        <td>Rp {{ number_format($pembayaran->tarif_tagihan ?? 0, 0, ',', '.') }}</td>
+        <td>Rp {{ number_format($pembayaran->biaya_admin ?? 0, 0, ',', '.') }}</td>
+        <td>Rp {{ number_format($pembayaran->biaya_abodemen ?? 0, 0, ',', '.') }}</td>
+        <td>Rp {{ number_format($pembayaran->total_tagihan, 0, ',', '.') }}</td>
+        <td>Rp {{ number_format($pembayaran->denda, 0, ',', '.') }}</td>
+        <td>Rp {{ number_format($pembayaran->jumlah_dibayar + ($pembayaran->biaya_admin ?? 0) + ($pembayaran->biaya_abodemen ?? 0), 0, ',', '.') }}</td>
+    </tr>
+    @endforeach
+</tbody>
         </table>
     </div>
 
@@ -118,8 +130,12 @@ document.addEventListener("DOMContentLoaded", function () {
         let totalPemasukan = 0;
         pemasukanRows.forEach(row => {
             let cols = row.querySelectorAll("td");
+            let biayaAdmin = cols[4]?.getAttribute("data-biaya-admin") || "0";
+            let biayaAbodemen = cols[4]?.getAttribute("data-biaya-abodemen") || "0";
             let jumlahDibayar = cols[4]?.innerText.trim().replace('Rp ', '').replace(/\./g, '') || "0";
-            totalPemasukan += parseInt(jumlahDibayar);
+
+            jumlahDibayar = parseInt(jumlahDibayar) + parseInt(biayaAdmin) + parseInt(biayaAbodemen);
+
 
             csvData.push([
                 cols[0]?.innerText.trim() || "",

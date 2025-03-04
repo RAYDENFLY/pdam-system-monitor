@@ -97,22 +97,56 @@
 </div>
 
 <script>
-    // Mobile Navbar Toggle
-    const menuToggle = document.getElementById('menu-toggle');
-    const mobileMenu = document.getElementById('mobile-menu');
+    async function redirectToInvoice(event) {
+        event.preventDefault(); // Mencegah form submit default
 
-    menuToggle.addEventListener('click', () => {
-        mobileMenu.classList.toggle('hidden');
-    });
+        let nomorPelanggan = document.getElementById("nomor_pelanggan").value.trim();
 
-    function redirectToInvoice() {
-        let nomorPelanggan = document.getElementById("nomor_pelanggan").value;
-        if (nomorPelanggan.trim() === '') {
-            alert("Harap masukkan nomor pelanggan!");
-            return false;
+        if (nomorPelanggan === '') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Oops...',
+                text: 'Harap masukkan nomor pelanggan!',
+            });
+            return;
         }
-        window.location.href = "{{ route('invoice.show', '') }}/" + nomorPelanggan;
-        return false;
+
+        try {
+            // Mengecek apakah nomor pelanggan ada di database
+            let response = await fetch("{{ url('/cek-pelanggan') }}/" + nomorPelanggan);
+            let result = await response.json();
+
+            if (result.exists) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Nomor pelanggan ditemukan!',
+                    text: 'Mengalihkan ke halaman invoice...',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                setTimeout(() => {
+                    window.location.href = "{{ route('invoice.show', '') }}/" + nomorPelanggan;
+                }, 2000);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Nomor pelanggan tidak ditemukan!',
+                    text: 'Silakan periksa kembali nomor pelanggan Anda.',
+                });
+            }
+        } catch (error) {
+            console.error("Terjadi kesalahan:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat memproses permintaan. Coba lagi nanti.',
+            });
+        }
     }
+
+    document.querySelector("form").addEventListener("submit", redirectToInvoice);
 </script>
+
+
 @endsection

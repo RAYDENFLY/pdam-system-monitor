@@ -36,6 +36,30 @@ class LaporanKeuanganController extends Controller
         return view('laporan.index', compact('pembayarans', 'total_pemasukan', 'tanggal_mulai', 'tanggal_selesai','pengeluarans','total_pengeluaran'));
     }
 
+    public function harian(Request $request)
+    {
+        // Ambil tanggal dari filter, default bulan ini
+        $tanggal_mulai = $request->input('tanggal_mulai', now()->startOfMonth()->toDateString());
+        $tanggal_selesai = $request->input('tanggal_selesai', now()->endOfMonth()->toDateString());
+
+        // Ambil data pembayaran berdasarkan rentang tanggal
+        $pembayarans = Pembayaran::whereBetween('tanggal_pembayaran', [$tanggal_mulai, $tanggal_selesai])->get();
+        
+
+        // Hitung total pemasukan
+        $total_pemasukan = $pembayarans->sum('jumlah_dibayar');
+
+          // Ambil data pengeluaran (Pengeluaran)
+            $pengeluarans = Pengeluaran::whereBetween('tanggal', [$tanggal_mulai, $tanggal_selesai])->get();
+            $total_pengeluaran = $pengeluarans->sum('jumlah');
+
+
+        return view('laporan.harian', compact('pembayarans', 'total_pemasukan', 'tanggal_mulai', 'tanggal_selesai','pengeluarans','total_pengeluaran'));
+    }
+    
+
+
+
     public function show($nomor_pelanggan)
     {
         // Ambil data pelanggan
@@ -55,6 +79,11 @@ class LaporanKeuanganController extends Controller
         $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
         $total_tagihan = $total_pemakaian * $tarif_per_kwh;
     
+        // Ambil biaya admin dan abonemen dari pembayaran terakhir (jika ada)
+        $pembayaranTerakhir = $pembayarans->first(); // Pembayaran terbaru
+        $biaya_admin = $pembayaranTerakhir ? $pembayaranTerakhir->biaya_admin : 0;
+        $biaya_abodemen = $pembayaranTerakhir ? $pembayaranTerakhir->biaya_abodemen : 0;
+    
         // Hitung total denda berdasarkan keterlambatan pembayaran
         $total_denda = 0;
         foreach ($pembayarans as $pembayaran) {
@@ -65,11 +94,8 @@ class LaporanKeuanganController extends Controller
             }
         }
     
-        // Total yang harus dibayar
-        $total_yang_harus_dibayar = $total_tagihan + $total_denda;
-    
-        // Menentukan pembayaran terakhir
-        $pembayaranTerakhir = $pembayarans->first(); // Ambil pembayaran pertama (terbaru)
+        // Total yang harus dibayar (termasuk biaya admin dan abonemen)
+        $total_yang_harus_dibayar = $total_tagihan + $total_denda + $biaya_admin + $biaya_abodemen;
     
         // Tentukan apakah sudah lunas atau belum
         $sudahTerbayar = $pembayaranTerakhir 
@@ -85,10 +111,62 @@ class LaporanKeuanganController extends Controller
             'total_pemakaian',
             'total_tagihan',
             'total_denda',
+            'biaya_admin', // Sekarang dari tabel `pembayarans`
+            'biaya_abodemen', // Sekarang dari tabel `pembayarans`
             'total_yang_harus_dibayar',
-            'sudahTerbayar',  // Kirimkan status pembayaran
-            'totalPembayaran' // Kirimkan total pembayaran
+            'sudahTerbayar',
+            'totalPembayaran'
         ));
+    }
+    
+    public function keseluruhan(Request $request)
+    {
+        // Ambil tanggal dari request atau gunakan default (bulan ini)
+        $tanggal_mulai = $request->query('tanggal_mulai', now()->startOfMonth()->toDateString());
+        $tanggal_selesai = $request->query('tanggal_selesai', now()->endOfMonth()->toDateString());
+    
+        // Ambil data pemasukan dari Pembayaran
+        $pembayarans = Pembayaran::whereBetween('tanggal_pembayaran', [$tanggal_mulai, $tanggal_selesai])
+            ->orderBy('tanggal_pembayaran', 'asc')
+            ->get();
+    
+        // Ambil data pengeluaran dari Pengeluaran
+        $pengeluarans = Pengeluaran::whereBetween('tanggal', [$tanggal_mulai, $tanggal_selesai])
+            ->orderBy('tanggal', 'asc')
+            ->get();
+    
+        // Hitung total pemasukan dan pengeluaran
+        $total_pemasukan = $pembayarans->sum('jumlah_dibayar');
+        $total_pengeluaran = $pengeluarans->sum('jumlah');
+    
+        // Buat array laporan untuk ditampilkan di view
+        $laporanKeseluruhan = [];
+    
+        // Gabungkan data pemasukan dan pengeluaran dalam satu array
+        foreach ($pembayarans as $pembayaran) {
+            $laporanKeseluruhan[] = [
+                'tanggal' => $pembayaran->tanggal_pembayaran,
+                'keterangan' => 'Pemasukan dari ' . $pembayaran->nomor_pelanggan,
+                'pemasukan' => $pembayaran->jumlah_dibayar,
+                'pengeluaran' => 0, // Tidak ada pengeluaran di data ini
+            ];
+        }
+    
+        foreach ($pengeluarans as $pengeluaran) {
+            $laporanKeseluruhan[] = [
+                'tanggal' => $pengeluaran->tanggal,
+                'keterangan' => 'Pengeluaran: ' . $pengeluaran->keterangan,
+                'pemasukan' => 0, // Tidak ada pemasukan di data ini
+                'pengeluaran' => $pengeluaran->jumlah,
+            ];
+        }
+    
+        // Urutkan laporan berdasarkan tanggal
+        usort($laporanKeseluruhan, function ($a, $b) {
+            return strtotime($a['tanggal']) - strtotime($b['tanggal']);
+        });
+    
+        return view('laporan.keseluruhan', compact('laporanKeseluruhan', 'tanggal_mulai', 'tanggal_selesai', 'total_pemasukan', 'total_pengeluaran'));
     }
     
     
