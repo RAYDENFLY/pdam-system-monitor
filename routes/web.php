@@ -12,11 +12,14 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\KonfigurasiController;
 use App\Http\Controllers\KwhController;
 use App\Http\Controllers\PengeluaranController;
+use App\Http\Controllers\CatatanPemakaianController;
 
 Route::get('/', function () {
     return view('homepage');
 })->name('home');
 
+Route::get('/pelanggan/catat', [CatatanPemakaianController::class, 'index'])->name('pelanggan.catat');
+Route::post('/pelanggan/catat', [CatatanPemakaianController::class, 'store'])->name('pelanggan.catat.store');
 
 Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showRegisterForm'])->name('admin.register');
@@ -55,6 +58,8 @@ Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function ()
 });
 
 Route::middleware(['auth', RoleMiddleware::class . ':kasir'])->group(function () {
+    Route::get('/pelanggan/catat', [CatatanPemakaianController::class, 'index'])->name('pelanggan.catat');
+    Route::post('/pelanggan/catat', [CatatanPemakaianController::class, 'store'])->name('pelanggan.catat.store');
     // ✅ Pastikan rute statis didefinisikan lebih dahulu
     Route::get('/transaksi/pembayaran', [InvoiceController::class, 'pembayaran'])->name('transaksi.pembayaran');
     Route::post('/invoice/search', [InvoiceController::class, 'search'])->name('invoice.search3343eqs4zrdrffe3aqw2');

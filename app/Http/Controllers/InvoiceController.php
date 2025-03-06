@@ -204,57 +204,62 @@ class InvoiceController extends Controller
     }
 
     public function pembayaran(Request $request)
-    {   
+{   
+    // Ambil daftar pelanggan untuk dropdown
+    $pelanggans = Pelanggan::all();
+
+    // Inisialisasi variabel dengan nilai default
+    $pelanggan = null;
+    $pembayaranTerakhir = null;
+    $tarif_daya = '-';
     $total_pemakaian = 0;
     $total_tagihan = 0;
     $total_denda = 0;
     $totalPembayaran = 0;
-        // Ambil daftar pelanggan untuk dropdown
-        $pelanggans = Pelanggan::all();
-    
-        // Cek apakah pelanggan sudah dipilih
-        if ($request->has('nomor_pelanggan')) {
-            $nomor_pelanggan = $request->input('nomor_pelanggan');
-            $pelanggan = Pelanggan::where('nomor_pelanggan', $nomor_pelanggan)->first();
-    
-            if (!$pelanggan) {
-                return back()->withErrors(['nomor_pelanggan' => 'Pelanggan tidak ditemukan']);
-            }
-            
-            // Ambil pembayaran terakhir pelanggan ini
-            $pembayaranTerakhir = Pembayaran::where('nomor_pelanggan', $nomor_pelanggan)
-                ->latest()
-                ->first();
-    
-            // Ambil konfigurasi tarif
-            $konfigurasi = Konfigurasi::first();
-            $tarif_per_kwh = $konfigurasi->tarif_per_kwh[$pelanggan->kategori_tarif] ?? 1500;
-    
-            // Hitung total pemakaian
-            $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
-            $total_tagihan = $total_pemakaian * $tarif_per_kwh;
-    
-            // Hitung denda dan total pembayaran
-            $total_denda = abs(Pembayaran::hitungDenda($nomor_pelanggan));
-            $totalPembayaran = $total_tagihan + $total_denda;
-    
-            $tarif_daya = $pelanggan->kategori_tarif . ' / ' . number_format($tarif_per_kwh, 0, ',', '.') . ' per kWh';
-    
-            return view('invoice.pembayaran', compact(
-                'pelanggans',
-                'pelanggan',
-                'pembayaranTerakhir',
-                'total_pemakaian',
-                'total_tagihan',
-                'total_denda',
-                'totalPembayaran',
-                'tarif_daya'
-            ));
+
+    // Cek apakah pelanggan sudah dipilih
+    if ($request->has('nomor_pelanggan')) {
+        $nomor_pelanggan = $request->input('nomor_pelanggan');
+        $pelanggan = Pelanggan::where('nomor_pelanggan', $nomor_pelanggan)->first();
+
+        if (!$pelanggan) {
+            return back()->withErrors(['nomor_pelanggan' => 'Pelanggan tidak ditemukan']);
         }
-    
-        // Jika belum memilih pelanggan, tampilkan hanya form pelanggan
-        return view('invoice.pembayaran', compact('pelanggans'));
+        
+        // Ambil pembayaran terakhir pelanggan ini
+        $pembayaranTerakhir = Pembayaran::where('nomor_pelanggan', $nomor_pelanggan)
+            ->latest()
+            ->first();
+
+        // Ambil konfigurasi tarif
+        $konfigurasi = Konfigurasi::first();
+        $tarif_per_kwh = $konfigurasi->tarif_per_kwh[$pelanggan->kategori_tarif] ?? 1500;
+
+        // Hitung total pemakaian
+        $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
+        $total_tagihan = $total_pemakaian * $tarif_per_kwh;
+
+        // Hitung denda dan total pembayaran
+        $total_denda = abs(Pembayaran::hitungDenda($nomor_pelanggan));
+        $totalPembayaran = $total_tagihan + $total_denda;
+
+        // Format tarif daya
+        $tarif_daya = $pelanggan->kategori_tarif . ' / ' . number_format($tarif_per_kwh, 0, ',', '.') . ' per kWh';
     }
+
+    // Tampilkan view dengan variabel yang sudah didefinisikan
+    return view('invoice.pembayaran', compact(
+        'pelanggans',
+        'pelanggan',
+        'pembayaranTerakhir',
+        'total_pemakaian',
+        'total_tagihan',
+        'total_denda',
+        'totalPembayaran',
+        'tarif_daya'
+    ));
+}
+
     
 
 

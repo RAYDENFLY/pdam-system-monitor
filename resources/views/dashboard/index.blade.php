@@ -71,7 +71,9 @@
             <i class="fas fa-credit-card text-2xl mr-2"></i> Pembayaran
         </a>
         @endif
-
+        <a href="{{ route('pelanggan.catat') }}" class="bg-orange-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-orange-600 transition">
+            <i class="fas fa-clipboard-list text-2xl mr-2"></i> Catat Pelanggan
+        </a>
         <!-- ✅ Tombol Tambah & Data Pelanggan -->
         <a href="{{ route('user.pelanggan') }}" class="bg-purple-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-purple-600 transition">
             <i class="fas fa-user-plus text-2xl mr-2"></i> Tambah & Data Pelanggan
