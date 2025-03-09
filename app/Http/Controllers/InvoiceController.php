@@ -337,7 +337,8 @@ public function bayar(Request $request)
     \Log::info('Total pembayaran dari form', ['total_pembayaran' => $total_pembayaran]);
 
     $jumlah_dibayar = $request->jumlah_dibayar;
-    $kembalian = max(0, $jumlah_dibayar - $total_pembayaran);
+
+    $kembalian = $jumlah_dibayar - $total_pembayaran;
     if ($kembalian > $jumlah_dibayar) {
         \Log::error('Nilai kembalian tidak logis', ['kembalian' => $kembalian]);
         return back()->with('error', 'Terjadi kesalahan perhitungan kembalian.');
