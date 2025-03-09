@@ -19,6 +19,7 @@ class Pembayaran extends Model {
         'denda',
         'biaya_admin',
         'biaya_abodemen',
+        'kembalian', // Pastikan ini ada!
     ];
 
     // Tambahkan relasi ke model Pelanggan
@@ -68,7 +69,15 @@ class Pembayaran extends Model {
         }
 
         // Hitung jumlah bulan keterlambatan
-        $bulan_telat = Carbon::now()->startOfDay()->diffInMonths($tanggal_jatuh_tempo);
+        $bulan_telat = max(0, $tanggal_jatuh_tempo->diffInMonths(Carbon::now()->startOfMonth()));
+
+        // Ambil nilai denda berdasarkan bulan tersebut (agar tidak mempengaruhi invoice lama)
+        $denda_per_bulan = [];
+        for ($i = 0; $i < $bulan_telat; $i++) {
+            $bulan = Carbon::now()->subMonths($i)->format('Y-m'); // Ambil bulan yang sudah lewat
+            $konfigurasi = Konfigurasi::whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$bulan])->first();
+            $denda_per_bulan[] = optional($konfigurasi)->denda_bulanan ?? 5000; // Default 5000 jika tidak ada konfigurasi
+        }
 
         // Hitung total denda berdasarkan bulan keterlambatan
         $total_denda = $bulan_telat * $denda_bulanan;

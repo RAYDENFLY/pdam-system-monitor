@@ -8,7 +8,7 @@
     <p><strong>Alamat:</strong> {{ $pelanggan->alamat }}</p>
     <p><strong>No. Telepon:</strong> {{ $pelanggan->no_telepon }}</p>
     <p><strong>KWH Terakhir:</strong> {{ $pelanggan->kwh_terakhir }}</p>
-    <a href="{{ route('pelanggan.index') }}" class="btn btn-primary">Kembali</a>
+    <a href="{{ route('invoice.list') }}" class="btn btn-primary">Kembali</a>
 
     <!-- Riwayat Pembayaran -->
     <h3 class="mt-4">Riwayat Pembayaran</h3>

@@ -84,7 +84,6 @@
                 <td>{{ $pelanggan->kategori_tarif }}</td>
                 <td>{{ $pelanggan->kwh_terakhir }}</td>
                 <td>
-                    <a href="{{ route('invoice.show', $pelanggan->nomor_pelanggan) }}" class="btn btn-info btn-sm">Cetak Invoice</a>
                     @if(Auth::user()->role == 'admin')
                     <a href="{{ route('pelanggan.edit', $pelanggan->nomor_pelanggan) }}" class="btn btn-warning btn-sm">Edit</a>
                     <form action="{{ route('pelanggan.destroy', $pelanggan->nomor_pelanggan) }}" method="POST" style="display:inline;">

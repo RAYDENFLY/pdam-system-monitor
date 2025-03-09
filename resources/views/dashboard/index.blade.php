@@ -65,11 +65,8 @@
 
 
         <button class="bg-gray-700 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-gray-800 transition" data-bs-toggle="modal" data-bs-target="#invoiceModal">
-            <i class="fas fa-file-invoice text-2xl mr-2"></i> Invoice
+            <i class="fas fa-file-invoice text-2xl mr-2"></i> Invoice & Pembayaran
         </button>
-        <a href="{{ route('transaksi.pembayaran') }}n" class="bg-teal-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-teal-600 transition">
-            <i class="fas fa-credit-card text-2xl mr-2"></i> Pembayaran
-        </a>
         @endif
         <a href="{{ route('pelanggan.catat') }}" class="bg-orange-500 text-white flex items-center justify-center py-3 rounded-lg shadow-lg hover:bg-orange-600 transition">
             <i class="fas fa-clipboard-list text-2xl mr-2"></i> Catat Pelanggan
@@ -92,7 +89,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="invoiceModalLabel">Pilihan Invoice</h5>
+                    <h5 class="modal-title" id="invoiceModalLabel">Pilihan Invoice & Pembayaran</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -101,6 +98,9 @@
                     </a>
                     <a href="{{ route('invoice.create') }}" class="btn btn-success btn-lg w-100 mb-2">
                         <i class="fas fa-plus"></i> Buat Invoice
+                    </a>
+                    <a href="{{ route('invoice.prosesBayar') }}" class="btn btn-warning btn-lg w-100 mb-2">
+                        <i class="fas fa-pay"></i> Pembayaran
                     </a>
                 </div>
             </div>
@@ -121,7 +121,8 @@
         <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg flex justify-between items-center">
             <div>
                 <h5 class="text-lg font-semibold">Total Tagihan Bulan Ini</h5>
-                <p class="text-3xl font-bold">Rp {{ number_format($totalTagihanBulanIni, 0, ',', '.') }}</p>
+                <p class="text-3xl font-bold">Rp {{ number_format(($invoice->total_tagihan ?? 0) + ($invoice->denda ?? 0) + ($invoice->biaya_admin ?? 0) + ($invoice->biaya_abodemen ?? 0), 0, ',', '.') }}</td>
+                </p>
             </div>
             <i class="fas fa-file-invoice-dollar text-4xl"></i>
         </div>

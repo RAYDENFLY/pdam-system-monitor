@@ -66,7 +66,7 @@
 
          <!-- Tombol -->
          <div class="flex justify-between items-center mt-6">
-            <a href="{{ route('pelanggan.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+            <a href="{{ route('dashboard') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
                Kembali
             </a>
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">

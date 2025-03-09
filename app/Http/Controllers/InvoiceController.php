@@ -7,6 +7,8 @@ use App\Models\Pelanggan;
 use App\Models\Pembayaran;
 use App\Models\Konfigurasi;
 use Carbon\Carbon;
+use App\Models\CatatanPemakaian;
+
 
 class InvoiceController extends Controller
 {
@@ -17,13 +19,14 @@ class InvoiceController extends Controller
     }
 
     function getTarif() {
-        $bulanIni = Carbon::now()->format('Y-m');
-    
-        // Ambil tarif yang berlaku bulan ini
-        $tarif = Konfigurasi::where('bulan_berlaku', '<=', $bulanIni)
-                            ->orderBy('bulan_berlaku', 'desc')
-                            ->first();
-    
+        $bulanIni = date('Y-m'); // Ambil tahun-bulan sekarang (contoh: 2025-03)
+
+        // Ambil konfigurasi terbaru sebelum atau pada bulan ini
+        $tarif = Konfigurasi::whereDate('created_at', '<=', $bulanIni . '-20') 
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+        
         return $tarif ? $tarif->tarif_per_kwh : 1500; // Default 1500 jika tidak ada tarif di database
     }
                     
@@ -203,65 +206,6 @@ class InvoiceController extends Controller
         return view('invoice.create', compact('pelanggans'));
     }
 
-    public function pembayaran(Request $request)
-{   
-    // Ambil daftar pelanggan untuk dropdown
-    $pelanggans = Pelanggan::all();
-
-    // Inisialisasi variabel dengan nilai default
-    $pelanggan = null;
-    $pembayaranTerakhir = null;
-    $tarif_daya = '-';
-    $total_pemakaian = 0;
-    $total_tagihan = 0;
-    $total_denda = 0;
-    $totalPembayaran = 0;
-
-    // Cek apakah pelanggan sudah dipilih
-    if ($request->has('nomor_pelanggan')) {
-        $nomor_pelanggan = $request->input('nomor_pelanggan');
-        $pelanggan = Pelanggan::where('nomor_pelanggan', $nomor_pelanggan)->first();
-
-        if (!$pelanggan) {
-            return back()->withErrors(['nomor_pelanggan' => 'Pelanggan tidak ditemukan']);
-        }
-        
-        // Ambil pembayaran terakhir pelanggan ini
-        $pembayaranTerakhir = Pembayaran::where('nomor_pelanggan', $nomor_pelanggan)
-            ->latest()
-            ->first();
-
-        // Ambil konfigurasi tarif
-        $konfigurasi = Konfigurasi::first();
-        $tarif_per_kwh = $konfigurasi->tarif_per_kwh[$pelanggan->kategori_tarif] ?? 1500;
-
-        // Hitung total pemakaian
-        $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
-        $total_tagihan = $total_pemakaian * $tarif_per_kwh;
-
-        // Hitung denda dan total pembayaran
-        $total_denda = abs(Pembayaran::hitungDenda($nomor_pelanggan));
-        $totalPembayaran = $total_tagihan + $total_denda;
-
-        // Format tarif daya
-        $tarif_daya = $pelanggan->kategori_tarif . ' / ' . number_format($tarif_per_kwh, 0, ',', '.') . ' per kWh';
-    }
-
-    // Tampilkan view dengan variabel yang sudah didefinisikan
-    return view('invoice.pembayaran', compact(
-        'pelanggans',
-        'pelanggan',
-        'pembayaranTerakhir',
-        'total_pemakaian',
-        'total_tagihan',
-        'total_denda',
-        'totalPembayaran',
-        'tarif_daya'
-    ));
-}
-
-    
-
 
     public function store(Request $request)
     {
@@ -348,6 +292,176 @@ public function list(Request $request)
     
     return view('invoice.list', compact('invoices'));
 }
+
+public function bayar(Request $request)
+{
+    \Log::info('Fungsi bayar() dipanggil', ['request' => $request->all()]);
+
+    $request->validate([
+        'nomor_pelanggan' => 'required|exists:pelanggans,nomor_pelanggan',
+        'total_bayar' => 'required|numeric|min:0',
+        'jumlah_dibayar' => 'required|numeric|min:0',
+    ]);
+
+    \Log::info('Validasi berhasil', ['data' => $request->all()]);
+
+    $pelanggan = Pelanggan::where('nomor_pelanggan', $request->nomor_pelanggan)->first();
+    if (!$pelanggan) {
+        \Log::error('Pelanggan tidak ditemukan!', ['nomor_pelanggan' => $request->nomor_pelanggan]);
+        return back()->with('error', 'Pelanggan tidak ditemukan.');
+    }
+
+    \Log::info('Pelanggan ditemukan', ['pelanggan' => $pelanggan]);
+
+    // Ambil data pemakaian pelanggan
+    $pemakaians = CatatanPemakaian::where('nomor_pelanggan', $request->nomor_pelanggan)->get();
+    $total_pemakaian = $pemakaians->sum('jumlah_penggunaan') ?? 0;
+
+    // Hitung denda
+    $total_denda = abs(Pembayaran::hitungDenda($request->nomor_pelanggan));
+    \Log::info('Denda dihitung', ['total_denda' => $total_denda]);
+
+    // Pastikan biaya admin dan abodemen memiliki nilai
+    $biaya_admin = $request->biaya_admin ?? 2500;
+    
+    // Cari data pembayaran terakhir untuk mendapatkan biaya abodemen
+    $pembayaranTerakhir = Pembayaran::where('nomor_pelanggan', $request->nomor_pelanggan)
+                                   ->orderBy('id', 'desc')
+                                   ->first();
+    
+    $biaya_abodemen = $pembayaranTerakhir->biaya_abodemen ?? 0;
+
+    // Hitung total yang harus dibayar
+    $total_pembayaran = $request->total_tagihan + $total_denda + $biaya_admin + $biaya_abodemen;
+
+    \Log::info('Total pembayaran dari form', ['total_pembayaran' => $total_pembayaran]);
+
+    $jumlah_dibayar = $request->jumlah_dibayar;
+    $kembalian = max(0, $jumlah_dibayar - $total_pembayaran);
+    if ($kembalian > $jumlah_dibayar) {
+        \Log::error('Nilai kembalian tidak logis', ['kembalian' => $kembalian]);
+        return back()->with('error', 'Terjadi kesalahan perhitungan kembalian.');
+    }
+    
+    \Log::info('Total sebelum simpan', [
+        'total_tagihan' => $request->total_tagihan,
+        'total_denda' => $total_denda,
+        'biaya_admin' => $biaya_admin,
+        'biaya_abodemen' => $biaya_abodemen,
+        'total_pembayaran' => $total_pembayaran,
+    ]);
+    
+    
+    if ($jumlah_dibayar < $total_pembayaran) {
+        \Log::error('Pembayaran gagal: Uang kurang', [
+            'jumlah_dibayar' => $jumlah_dibayar,
+            'total_pembayaran' => $total_pembayaran
+        ]);
+        return back()->with('error', 'Uang yang dibayarkan kurang dari jumlah tagihan.');
+    }
+
+    try {
+        // Simpan pembayaran
+        $pembayaran = Pembayaran::create([
+            'nomor_pelanggan' => $request->nomor_pelanggan,
+            'total_pemakaian' => $total_pemakaian, // ← FIXED: Total pemakaian sekarang sudah ada
+            'total_tagihan' => $request->total_bayar - $total_denda - $biaya_admin - $biaya_abodemen,
+            'biaya_admin' => $biaya_admin,
+            'biaya_abodemen' => $biaya_abodemen,
+            'jumlah_dibayar' => $jumlah_dibayar,
+            'tanggal_pembayaran' => now(),
+            'denda' => $total_denda,
+            'kembalian' => $kembalian,
+        ]);
+
+        \Log::info('Pembayaran berhasil disimpan', ['pembayaran' => $pembayaran]);
+        \Log::info('Total tagihan:', ['total_tagihan' => $request->total_tagihan]);
+        \Log::info('Total denda:', ['total_denda' => $total_denda]);
+        \Log::info('Biaya admin:', ['biaya_admin' => $biaya_admin]);
+        \Log::info('Biaya abodemen:', ['biaya_abodemen' => $biaya_abodemen]);
+        \Log::info('Total pembayaran yang dihitung:', ['total_pembayaran' => $total_pembayaran]);
+
+        
+        // Update status pemakaian yang sudah dibayar
+        foreach ($pemakaians as $pemakaian) {
+            $pemakaian->id = $pembayaran->id;
+            $pemakaian->save();
+        }
+        
+        // Update tanggal pembayaran terakhir pelanggan
+        $pelanggan->tanggal_pembayaran_terakhir = now();
+        $pelanggan->save();
+        \Log::info('Tanggal pembayaran pelanggan diperbarui');
+
+        return redirect()->route('invoice.list')->with('success', 'Pembayaran berhasil! Kembalian: Rp ' . number_format($kembalian, 0, ',', '.'));
+    } catch (\Exception $e) {
+        \Log::error('Terjadi error saat menyimpan pembayaran', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        return back()->with('error', 'Terjadi kesalahan saat memproses pembayaran: ' . $e->getMessage());
+    }
+}
+
+
+
+public function prosesBayar(Request $request)
+{
+    $pelanggans = Pelanggan::all();
+    $nomorPelanggan = $request->input('nomor_pelanggan');
+    
+    // If a customer is selected, get their billing details
+    if ($nomorPelanggan) {
+        $pelanggan = Pelanggan::where('nomor_pelanggan', $nomorPelanggan)->firstOrFail();
+        
+        // Get tariff configuration
+        $tarif = $this->getTarif(); // Pastikan ini mengembalikan JSON
+        $tarifData = json_decode($tarif, true); // Konversi JSON ke array
+        $kategori = $pelanggan->kategori ?? 'R1'; // Default ke R1 jika tidak ada kategori
+
+        // Calculate usage and bill
+        $total_pemakaian = max(0, $pelanggan->kwh_terakhir - $pelanggan->kwh_bulan_lalu);
+        // Ambil tarif yang sesuai dengan kategori pelanggan
+        $tarif_per_kwh = isset($tarifData[$kategori]) ? floatval($tarifData[$kategori]) : 0;
+
+        $totalTagihan = floatval($total_pemakaian) * $tarif_per_kwh;
+
+        $pembayaranTerakhir = Pembayaran::where('nomor_pelanggan', $nomorPelanggan)
+    ->latest('tanggal_pembayaran')
+    ->first();
+
+        
+
+        
+        // Calculate late fee
+        $total_denda = abs($request->denda ?? Pembayaran::hitungDenda($request->nomor_pelanggan));
+
+        // Admin fee and subscription fee
+        $biaya_admin = $request->biaya_admin ?? 2500;
+        $biaya_abodemen = $request->biaya_abodemen ?? 0;
+        
+        // Calculate total payment
+        $total_pembayaran = $totalTagihan + $total_denda + $biaya_admin + $biaya_abodemen;
+
+        
+        return view('invoice.pembayaran', compact(
+            'pelanggans', 'nomorPelanggan'
+        ))->with([
+            'pelanggan' => $pelanggan ?? null,
+            'totalTagihan' => $totalTagihan ?? 0,
+            'total_denda' => $total_denda ?? 0,
+            'biaya_admin' => $biaya_admin ?? 2500,
+            'biaya_abodemen' => $biaya_abodemen ?? 0,
+            'total_pembayaran' => $total_pembayaran ?? 0,
+            'total_pemakaian' => $total_pemakaian ?? 0,
+            'pembayaranTerakhir' => $pembayaranTerakhir ?? null,
+        ]);
+        
+        
+    }
+    
+    
+    // If no customer is selected yet
+    return view('invoice.pembayaran', compact('pelanggans'));
+}
+
     
     public function getDenda($nomor_pelanggan)
     {
@@ -395,5 +509,65 @@ public function list(Request $request)
         'total_biaya'
     ));
 }
+
+public function getTagihan($nomor_pelanggan)
+{
+           // Validasi input
+           $request->validate([
+            'nomor_pelanggan' => 'required|exists:pelanggans,nomor_pelanggan',
+            'total_pemakaian' => 'required|numeric|min:0',
+            'total_tagihan' => 'required|numeric|min:0',
+            'biaya_admin' => 'nullable|numeric|min:0', // Bisa kosong, default 2500
+            'biaya_abodemen' => 'nullable|numeric|min:0', // Bisa kosong
+            'denda' => 'nullable|numeric',
+        ]);
+
+        if (!$request->has('denda')) {
+            $validated['denda'] = Pembayaran::hitungDenda($request->nomor_pelanggan);
+        }
+    
+        // Ambil pelanggan
+        $pelanggan = Pelanggan::where('nomor_pelanggan', $request->nomor_pelanggan)->firstOrFail();
+    
+        $total_denda = abs($request->denda ?? Pembayaran::hitungDenda($request->nomor_pelanggan));
+    
+        // Log the denda calculation
+        \Log::info("Creating invoice for customer: " . $request->nomor_pelanggan);
+        \Log::info("Calculated denda: " . $total_denda);
+    
+        // Ambil biaya admin, default ke 2500 jika tidak diisi
+        $biaya_admin = $request->biaya_admin ?? 2500;
+        $biaya_abodemen = $request->biaya_abodemen ?? 0;
+    
+        // Hitung total pembayaran
+        $total_pembayaran = $request->total_tagihan + $total_denda + $biaya_admin + $biaya_abodemen;
+    
+        // Simpan pembayaran baru
+        $pembayaran = Pembayaran::create([
+            'nomor_pelanggan' => $request->nomor_pelanggan,
+            'total_pemakaian' => $request->total_pemakaian,
+            'total_tagihan' => $request->total_tagihan,
+            'biaya_admin' => $biaya_admin,
+            'biaya_abodemen' => $biaya_abodemen,
+            'jumlah_dibayar' => 0,  // Belum dibayar
+            'tanggal_pembayaran' => null, // Belum dibayar
+            'denda' => $total_denda,  // Make sure this is saved
+        ]);
+
+        
+        
+        
+        // Double-check the save was successful
+        \Log::info("Saved invoice with ID: " . $pembayaran->id);
+        \Log::info("Saved denda value: " . $pembayaran->denda);
+        
+        return redirect()->route('invoice.list')->with('success', 'Invoice berhasil dibuat.');
+    
+    // Double-check the save was successful
+    \Log::info("Saved invoice with ID: " . $pembayaran->id);
+    \Log::info("Saved denda value: " . $pembayaran->denda);
+    
+}
+
 
 }

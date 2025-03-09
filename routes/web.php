@@ -20,6 +20,10 @@ Route::get('/', function () {
 
 Route::get('/pelanggan/catat', [CatatanPemakaianController::class, 'index'])->name('pelanggan.catat');
 Route::post('/pelanggan/catat', [CatatanPemakaianController::class, 'store'])->name('pelanggan.catat.store');
+Route::post('/invoice/bayar', [InvoiceController::class, 'bayar'])->name('invoice.bayar');
+Route::get('/invoice/bayar', [InvoiceController::class, 'prosesBayar'])->name('invoice.prosesBayar');
+
+
 
 Route::middleware(['auth', RoleMiddleware::class . ':admin'])->group(function () {
     Route::get('/admin/register', [AdminController::class, 'showRegisterForm'])->name('admin.register');

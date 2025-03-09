@@ -28,6 +28,7 @@
                 <th>Biaya Admin</th>
                 <th>Biaya Abodemen</th>
                 <th>Total Tagihan per Transaksi</th>
+                <th>Kembalian</th>
             </tr>
         </thead>
         <tbody>
@@ -51,6 +52,8 @@
                 <td>Rp {{ number_format($pembayaran->biaya_admin, 0, ',', '.') }}</td>
                 <td>Rp {{ number_format($pembayaran->biaya_abodemen, 0, ',', '.') }}</td>
                 <td><strong>Rp {{ number_format($totalPerTransaksi, 0, ',', '.') }}</strong></td>
+                <td>Rp {{ number_format($pembayaran->kembalian, 0, ',', '.') }}</td> <!-- Tambahan kembalian -->
+
             </tr>
             @endforeach
         </tbody>
